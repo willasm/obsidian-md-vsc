@@ -1,0 +1,131 @@
+{
+  "name": "obsidian-md-vsc",
+  "displayName": "Obsidian MD for VSCode",
+  "decription": "Connect to Obsidian from VSCode",
+  "version": "1.0.0",
+  "author": "William McKeever <willmck63@gmail.com>",
+  "publisher": "willasm",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.32.0"
+  },
+  "main": "src/extension.js",
+  "icon": "images/icon.png",
+  "keywords": [
+    "obsidian",
+    "md",
+    "markdown",
+    "notes",
+    "knowledge base",
+    "connections",
+    "connected",
+    "backlinks",
+    "links"
+  ],
+  "categories": [
+    "Notebooks",
+    "Education",
+    "Visualization",
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "obsidian-md-vsc.connect-with-vault",
+        "title": "Obsidian MD: Connect with Obsidian"
+      },
+      {
+        "command": "obsidian-md-vsc.set-defaults-global",
+        "title": "Obsidian MD: Set Default Vault and Note (Global)"
+      },
+      {
+        "command": "obsidian-md-vsc.set-defaults-local",
+        "title": "Obsidian MD: Set Default Vault and Note (Workspace)"
+      }
+    ],
+    "keybindings": [
+      {
+          "command": "obsidian-md-vsc.connect-with-vault",
+          "key": "alt+o",
+          "when": "editorTextFocus"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "obsidian-md-vsc.connect-with-vault"
+        },
+        {
+          "command": "obsidian-md-vsc.set-defaults-global"
+        },
+        {
+          "command": "obsidian-md-vsc.set-defaults-local"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Obsidian MD VSCode",
+      "type": "object",
+      "properties": {
+        "obsidian-md-vsc.defaultVault": {
+          "type": "string",
+          "description": "Default Obsidian Vault to Use",
+          "default": ""
+        },
+        "obsidian-md-vsc.defaultVaultPath": {
+          "type": "string",
+          "description": "Path to Default Obsidian Vault to Use",
+          "default": ""
+        },
+        "obsidian-md-vsc.defaultNote": {
+          "type": "string",
+          "description": "Default Obsidian Note to Use",
+          "default": ""
+        },
+        "obsidian-md-vsc.BacklinkPrefix": {
+          "type": "array",
+          "default": [
+            "BUG:",
+            "CHANGED:",
+            "DEBUG:",
+            "FIXME:",
+            "HACK:",
+            "IDEA:",
+            "NOTE:",
+            "OPTIMIZE:",
+            "RESEARCH:",
+            "REVIEW:",
+            "TEMP:",
+            "TODO:"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "Prefix for Backlink Description"
+        },
+        "obsidian-md-vsc.buttonClass": {
+          "type": "string",
+          "description": "Default button class Used for Buttons plugin (optional)",
+          "default": ""
+        }
+      }
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/willasm/obsidian-md-vsc.git"
+  },
+  "bugs": {
+    "url": "https://github.com/willasm/obsidian-md-vsc/issues",
+		"email": "willmck63@gmail.com"
+  },
+  "homepage": "https://github.com/willasm/obsidian-md-vsc#readme",
+  "scripts": {},
+  "dependencies": {
+    "appdata-path": "^1.0.0",
+    "moment": "^2.29.4"
+  }
+}
