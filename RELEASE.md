@@ -2,9 +2,9 @@
 
 <!-- ## [v-inc] ${YEAR4}-${MONTHNUMBER}-${DATE} -->
 
-## [1.0.0] 2023-12-02
+## [1.0.1] 2023-12-02
 
-- Initial release
+- Fixed readme images displaying
 
 
 For a full list of changes, please see the projects [Changelog](CHANGELOG.md) file.
