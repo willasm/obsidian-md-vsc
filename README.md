@@ -5,7 +5,7 @@
 ![](https://img.shields.io/visual-studio-marketplace/last-updated/willasm.obsidian-md-vsc)
 
 
-# Obsidian MD
+# Obsidian MD for VSCode
 Connect to Obsidian directly from within Visual Studio Code.
 
 > Obsidian is a powerful and extensible knowledge base
@@ -111,33 +111,33 @@ Note: Link and Buttons Text Format is Identical:
 #### Example Backlinks Screenshot from Obsidian
 Backlink Examples from Obsidian...
 
-![Backlink Examples](./images/BacklinkExamples.jpg)
+![Backlink Examples](/images/BacklinkExamples.jpg)
 
 ## Status Bar Button Screenshots
 Without Default Vault and Note set... (will run the command `Obsidian MD: Set Default Vault and Note (Global)`)
 
-![Status Bar Button No Vault Set](./images/StatusBarButtonNoVault.jpg)
+![Status Bar Button No Vault Set](/images/StatusBarButtonNoVault.jpg)
 
 With Default Vault and Note set... (will run the command `Obsidian MD: Connect with Obsidian` (Default Hotkey - ALT+O))
 
-![Status Bar Button With Vault Set](./images/StatusBarButtonWithVault.jpg)
+![Status Bar Button With Vault Set](/images/StatusBarButtonWithVault.jpg)
 
 ## Command Menu Screenshots
 Command Menu Home... To activate, run the command `Obsidian MD: Connect with Obsidian` (Default Hotkey - ALT+O)
 
-![Command Menu Home](./images/ObsidianConnectMenu1.jpg)
+![Command Menu Home](/images/ObsidianConnectMenu1.jpg)
 
 Open in Obsidian Submenu...
 
-![Open in Obsidian Submenu](./images/ObsidianConnectMenu2.jpg)
+![Open in Obsidian Submenu](/images/ObsidianConnectMenu2.jpg)
 
 Daily Note Submenu...
 
-![Daily Note Submenu](./images/ObsidianConnectMenu3.jpg)
+![Daily Note Submenu](/images/ObsidianConnectMenu3.jpg)
 
 Daily Note Prepend/Append to Header Submenu...
 
-![Daily Note Prepend/Append Submenu](./images/ObsidianConnectMenu4.jpg)
+![Daily Note Prepend/Append Submenu](/images/ObsidianConnectMenu4.jpg)
 
 ## The Command Structure Outline
 
