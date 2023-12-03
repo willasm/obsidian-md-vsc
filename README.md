@@ -111,16 +111,16 @@ Note: Link and Buttons Text Format is Identical:
 #### Example Backlinks Screenshot from Obsidian
 Backlink Examples from Obsidian...
 
-![Command Menu Home](./images/BacklinkExamples.jpg)
+![Backlink Examples](./images/BacklinkExamples.jpg)
 
 ## Status Bar Button Screenshots
 Without Default Vault and Note set... (will run the command `Obsidian MD: Set Default Vault and Note (Global)`)
 
-![Command Menu Home](./images/StatusBarButtonNoVault.jpg)
+![Status Bar Button No Vault Set](./images/StatusBarButtonNoVault.jpg)
 
 With Default Vault and Note set... (will run the command `Obsidian MD: Connect with Obsidian` (Default Hotkey - ALT+O))
 
-![Command Menu Home](./images/StatusBarButtonWithVault.jpg)
+![Status Bar Button With Vault Set](./images/StatusBarButtonWithVault.jpg)
 
 ## Command Menu Screenshots
 Command Menu Home... To activate, run the command `Obsidian MD: Connect with Obsidian` (Default Hotkey - ALT+O)
