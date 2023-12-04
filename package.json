@@ -122,7 +122,7 @@
     "url": "https://github.com/willasm/obsidian-md-vsc/issues",
 		"email": "willmck63@gmail.com"
   },
-  "homepage": "https://github.com/willasm/obsidian-md-vsc#readme",
+  "homepage": "https://github.com/willasm/obsidian-md-vsc/blob/master/README.md",
   "scripts": {},
   "dependencies": {
     "appdata-path": "^1.0.0",
