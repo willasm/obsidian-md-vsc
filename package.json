@@ -2,7 +2,7 @@
   "name": "obsidian-md-vsc",
   "displayName": "Obsidian MD for VSCode",
   "decription": "Connect to Obsidian from Visual Studio Code",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "author": "William McKeever <willmck63@gmail.com>",
   "publisher": "willasm",
   "license": "MIT",
