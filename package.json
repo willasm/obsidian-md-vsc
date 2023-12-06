@@ -2,7 +2,7 @@
   "name": "obsidian-md-vsc",
   "displayName": "Obsidian MD for VSCode",
   "decription": "Connect to Obsidian from Visual Studio Code",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "author": "William McKeever <willmck63@gmail.com>",
   "publisher": "willasm",
   "license": "MIT",
@@ -122,7 +122,7 @@
     "url": "https://github.com/willasm/obsidian-md-vsc/issues",
 		"email": "willmck63@gmail.com"
   },
-  "homepage": "https://github.com/willasm/obsidian-md-vsc/blob/master/README.md",
+  "homepage": "https://github.com/willasm/obsidian-md-vsc#readme",
   "scripts": {},
   "dependencies": {
     "appdata-path": "^1.0.0",

@@ -468,6 +468,8 @@ async function setDefaultVaultNote() {
   quickpick.onDidAccept(async () => {
     // setDefaulVaultNote - Get Default Obsidian Note From Selected Vault Folder 
     const dirVault = vscode.Uri.file(path.join(quickpick.selectedItems[0].path))
+    let vaultPath = dirVault.path;
+    let fsPathVault = dirVault.fsPath;
     const options = OpenDialogOptions = {
       title: `Select default note from Obsidian vault - ${quickpick.selectedItems[0].path}`,
       defaultUri: dirVault,
@@ -478,9 +480,21 @@ async function setDefaultVaultNote() {
       openLabel: "Select Default Note"
     };
     let noteUri = await vscode.window.showOpenDialog(options);
+    if (noteUri == undefined) {
+      quickpick.hide();
+      return;
+    };
+    let notePath = noteUri[0].path;
+    if (!notePath.includes(vaultPath)) {
+      let message = `Default note selected is outside of the vault '${quickpick.selectedItems[0].label}' Please try again.`;
+      vscode.window.showErrorMessage(message, 'OK');
+      return;
+    };
     // setDefaulVaultNote - Save the Selected Default Vault & Note to Settings 
     if (noteUri && noteUri[0]) {
-      let noteName = noteUri[0].fsPath.split('\\').pop();
+      let noteNameObj = noteUri[0].fsPath.split(fsPathVault);
+      let noteNameFull = noteNameObj[1];
+      let noteName = noteNameFull.replace(/^\/+|\\+/, "");
       noteName = noteName.substring(0, noteName.lastIndexOf('.'));
       let settings = vscode.workspace.getConfiguration("obsidian-md-vsc");
       if (useGlobalSettings) {
@@ -541,6 +555,15 @@ async function connectWithObsidian() {
   defaultNotePathFilename = path.join(defaultVaultPath, defaultNote);
   defaultNotePathFilename += '.md'
   let pathToNote = path.join(defaultVaultPath, defaultNote+".md");
+  if (!fs.existsSync(pathToNote)) {
+    let message = `Default note '${defaultNote}' was not found. Set Default Vault and Note Now?`;
+    let choice = await vscode.window.showErrorMessage(message,'Set Now', 'Cancel');
+    if (choice === 'Set Now') {
+      useGlobalSettings = true;
+      await setDefaultVaultNote();
+    };
+    return;
+  };
   let pathToBookmarks = path.join(defaultVaultPath, ".obsidian", "bookmarks.json");
   let pathToWorkspaces = path.join(defaultVaultPath, ".obsidian", "workspaces.json");
   let pathToPlugins = path.join(defaultVaultPath, ".obsidian", "community-plugins.json");
@@ -1476,8 +1499,11 @@ async function commandSendto() {
   }
 
   // commandSendto - Prompt User with Default Note Choices 
-  openPicks.push({label: 'Prepend to header...'});
-  openPicks.push({label: 'Append to header...'});
+  openPicks.push({label: `Append new header to default note: '${defaultNote}'`});
+  if (headers.length > 0) {
+    openPicks.push({label: 'Prepend to header...'});
+    openPicks.push({label: 'Append to header...'});
+  }
 
   // commandSendto - Prompt User with Default Note Command Choices 
   defaultPrependAppendCommands.push('Insert text');
@@ -1500,11 +1526,10 @@ async function commandSendto() {
   };
 
   let options = {
-    placeHolder: `Open note '${defaultNote}' in Obsidian`,
+    placeHolder: `Send to note '${defaultNote}' in Obsidian`,
     title: `---=== Vault: ${defaultVault}  -  Default Note: ${defaultNote} ===---`
   };
   pick = await vscode.window.showQuickPick(openPicks, options);
-
   // commandSendto - User Canceled 
   if (!pick) {
     return;
@@ -1514,7 +1539,53 @@ async function commandSendto() {
   let command = pick.label
   let obURI;
   switch (command) {
-    // commandSendto - Prepend & Append to note ${defaultNote} header 
+    // commandSendto - Append new header to note ${defaultNote} 
+    case `Append new header to default note: '${defaultNote}'`:
+      options = {
+        placeHolder: `Select new header size to create in note '${defaultNote}'`,
+        title: `---=== Vault: ${defaultVault}  -  Default Note: ${defaultNote} ===---`
+      };
+    let headerSizePick = await vscode.window.showQuickPick(['H1', 'H2', 'H3', 'H4', 'H5', 'H6'], options);
+    // commandSendto - User Canceled 
+    if (!headerSizePick) {
+      break;
+    }
+    options = {
+      placeHolder: `Enter new header text to insert in default note: '${defaultNote}'`,
+      prompt: "Eg. Sent from VSCode (Do not include the #'s)",
+      title: `---=== Vault: ${defaultVault}  -  Default Note: ${defaultNote} ===---`
+    };
+    let newHeaderText = await vscode.window.showInputBox(options);
+    if (newHeaderText == undefined || "") {
+      break;
+    };
+    let newHeaderString = "\n";
+    switch (headerSizePick) {
+      case 'H1':
+        newHeaderString += '# '
+        break;
+      case 'H2':
+        newHeaderString += '## '
+        break;
+      case 'H3':
+        newHeaderString += '### '
+        break;
+      case 'H4':
+        newHeaderString += '#### '
+        break;
+      case 'H5':
+        newHeaderString += '##### '
+        break;
+      case 'H6':
+        newHeaderString += '###### '
+        break;
+    };
+    newHeaderString += newHeaderText;
+    vscode.env.clipboard.writeText(newHeaderString);
+    obURI = `obsidian://advanced-uri?vault=${defaultVault}&filepath=${defaultNote}&clipboard=true&mode=append`
+    vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+    break;
+
     case 'Prepend to header...':
     case 'Append to header...':
     options = {

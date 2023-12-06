@@ -137,7 +137,7 @@ Daily Note Submenu...
 
 Daily Note Prepend/Append to Header Submenu...
 
-![Daily Note Prepend/Append Submenu](/images/ObsidianConnectMenu4.jpg)
+![Daily Note Prepend/Append Submenu](./images/ObsidianConnectMenu4.jpg)
 
 ## The Command Structure Outline
 
@@ -184,6 +184,7 @@ All the `Insert selected text...` items will not be shown when no text is select
 		- Insert VSCode backlink
 		- Insert VSCode backlink buttom (Will only appear when Buttons plugin is installed)
 - Send to note (Default Note)...
+    - Append new header to default note: (Default Note)
 	- Prepend to header...
 		- Insert text
 		- Insert selected text (Will only appear when text is selected)
