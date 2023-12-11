@@ -22,6 +22,9 @@ let defaultNotePathFilename;
 let dailyNoteFilename;
 let dailyNotePathFilename;
 let buttonClass;
+let backlinkSeparator;
+// Note: seperator regex - Just using or to match both
+let separatorsRegexString = ' ?\\| ?| ?~ ?| ?• ?| ?· ?| ?° ?| ?¦ ?| ?§ ?| ?¥ ?| ?¤ ?| ?º ?| ?— ?| ?¡ ?| ?« ?| ?» ?'
 let globalStoragePath;
 let globalStorageFilename = "Backlinks.json";
 let globalStorageFilenamePath;
@@ -49,16 +52,23 @@ async function activate(context) {
   //---------------------------------------------------------------------------------------------------------
   myContext = context;                    // Save context
 
+  // Activate - Update Backlinks Data File 
+  let extensionInfo =vscode.extensions.getExtension('willasm.obsidian-md-vsc');
+  let extensionPackage = extensionInfo.packageJSON;
+  let currentVersion = extensionPackage.version;
+  if (currentVersion == '1.2.0' || currentVersion == '1.1.0' || currentVersion == '1.0.4' || currentVersion == '1.0.3' || currentVersion == '1.0.2' || currentVersion == '1.0.1' || currentVersion == '1.0.0') {
+    updateOldDataFile();
+  };
+
   // Activate - Get Default Vault & Note from Settings 
   let settings = vscode.workspace.getConfiguration("obsidian-md-vsc");
   defaultVault = settings.get("defaultVault");
   defaultVaultPath = settings.get("defaultVaultPath");
   defaultNote = settings.get("defaultNote");
   buttonClass = settings.get("buttonClass");
+  backlinkSeparator = settings.get("backlinkSeparator");
   defaultNotePathFilename = path.join(defaultVaultPath, defaultNote);
   defaultNotePathFilename += '.md'
-  //BacklinkPrefix = ["BUG:", "CHANGED:", "DEBUG:", "FIXME:", "HACK:", "IDEA:", "NOTE:", "OPTIMIZE:", "RESEARCH:", "REVIEW:", "TEMP:", "TODO:"];
-  //CHANGED: Added backlink text setting | File: obsidian-md-vsc | ID: 1701043622
   BacklinkPrefix = settings.get("BacklinkPrefix");
   // Activate - Get OS, Possible return values are 'aix', 'darwin', 'freebsd','linux', 'openbsd', 'sunos', and 'win32' 
   osPlatform = os.platform();
@@ -107,6 +117,84 @@ async function activate(context) {
   // Activate - Create Statusbar Button 
   createStatusBarItem();
   showStatusBarItem();
+};
+
+
+//  ╭──────────────────────────────────────────────────────────────────────────────╮
+//  │                        ● Function updateOldDataFile ●                        │
+//  │                                                                              │
+//  │                  • Update old version backlinks data file •                  │
+//  ╰──────────────────────────────────────────────────────────────────────────────╯
+function updateOldDataFile() {
+
+  // updateOldDataFile - Create Extensions Global Storage Folder if it Does Not Exist 
+  globalStoragePath = myContext.globalStoragePath;
+  globalStorageFilenamePath = path.join(globalStoragePath, globalStorageFilename);
+  if (!fs.existsSync(globalStoragePath)) {
+    fs.mkdirSync(globalStoragePath, { recursive: true });
+    return; // No need to continue if backlinks data does not exist
+  };
+
+  // updateOldDataFile - Load Json Data File From Extensions Global Storage Folder if it Exists 
+  let fileJsonObject = [];
+  let newFileJsonObject = [];
+  if (fs.existsSync(globalStorageFilenamePath)) {
+    let file = fs.readFileSync(globalStorageFilenamePath,"utf-8");
+    fileJsonObject = JSON.parse(file);
+  } else {
+    // No need to continue if data file does not exist
+    return;
+  };
+  // No need to continue if data file contains no data
+  if (fileJsonObject.length == 0 || null || undefined) {
+    return;
+  };
+
+  // updateOldDataFile - Create a Backup of the Backlinks Data File 
+  let backupFile = path.join(globalStoragePath, globalStorageFilename + ".BKP");
+  if (!fs.existsSync(backupFile)) {
+    fs.writeFileSync(backupFile, JSON.stringify(fileJsonObject));
+  } else {
+    // Can return here since the backup is created then the data file has already been updated
+    return;
+  }
+  
+  // updateOldDataFile - Process Data File Contains Backlinks 
+  for (let i = 0; i < fileJsonObject.length; i ++) {
+    let id = fileJsonObject[i].id;
+    let type = fileJsonObject[i].type;
+    let vscodePath = fileJsonObject[i].vscodePath;
+    let obsidianPath = fileJsonObject[i].obsidianPath;
+    let lineNumber = fileJsonObject[i].lineNumber;
+    let newBacklinkText;
+    let vscodeFile = fs.readFileSync(vscodePath,"utf-8");
+    let idRegExVscode = new RegExp(`(.*?)( ?\\| ?)(File: ?)(.+?)( ?\\| ?)(ID: ?)(${id})`);
+    let match = idRegExVscode.exec(vscodeFile);
+    idRegExVscode.lastIndex = 0;
+    if (match != null) {
+      newBacklinkText = match[1];
+      let backlinkTextSearch = vscodeFile.replace(idRegExVscode, `| $1$2$3$4$5$6$7 |`);
+      idRegExVscode.lastIndex = 0;
+      let newDataItem = {
+        "id": id,
+        "type": type,
+        "vscodePath": vscodePath,
+        "obsidianPath": obsidianPath,
+        "lineNumber": lineNumber,
+        "backlinkText": newBacklinkText
+      };
+
+      // updateOldDataFile - Push the Updated Json Data File Item and Update this VSCode File 
+      newFileJsonObject.push(newDataItem);
+
+      // updateOldDataFile - Write this Backlink to the Updated VSCode File 
+      fs.writeFileSync(vscodePath, backlinkTextSearch);
+    };
+  };
+
+  // updateOldDataFile - Write the Updated Json Data File to Extensions Global Storage Folder 
+  fs.writeFileSync(globalStorageFilenamePath, JSON.stringify(newFileJsonObject));
+  vscode.window.showInformationMessage('Successfully Updated Backlinks Data File!', 'OK');
 
 };
 
@@ -116,7 +204,7 @@ async function activate(context) {
 //  │                                                                              │
 //  │                 • Add new item to the backlinks data file •                  │
 //  ╰──────────────────────────────────────────────────────────────────────────────╯
-function addBacklinkDataFile(id, type, vscodePath, obsidianPath, lineNumber) {
+function addBacklinkDataFile(id, type, vscodePath, obsidianPath, lineNumber, backlinkText) {
 
   // addBacklinkDataFile - Create Extensions Global Storage Folder if it Does Not Exist 
   globalStoragePath = myContext.globalStoragePath;
@@ -132,6 +220,7 @@ function addBacklinkDataFile(id, type, vscodePath, obsidianPath, lineNumber) {
     vscodePath: vscodePath,
     obsidianPath: obsidianPath,
     lineNumber: lineNumber,
+    backlinkText: backlinkText
   };
 
   // addBacklinkDataFile - Load Json Data File From Extensions Global Storage Folder if it Exists 
@@ -162,6 +251,7 @@ function removeBacklinkDataFile(id) {
   globalStorageFilenamePath = path.join(globalStoragePath, globalStorageFilename);
   if (!fs.existsSync(globalStoragePath)) {
     fs.mkdirSync(globalStoragePath, { recursive: true });
+    return;   // Just return if the file does not exist
   };
 
   // removeBacklinkDataFile - Load Json Data File From Extensions Global Storage Folder if it Exists 
@@ -182,6 +272,171 @@ function removeBacklinkDataFile(id) {
 
   // removeBacklinkDataFile - Write the Json Data File to Extensions Global Storage Folder 
   fs.writeFileSync(globalStorageFilenamePath, JSON.stringify(updatedJsonObject));
+
+};
+
+
+//  ╭──────────────────────────────────────────────────────────────────────────────╮
+//  │                  ● Function commandVerifyDeleteBacklinks ●                   │
+//  │                                                                              │
+//  │          • Validate All VSCode Backlinks and Prompt for Deletion •           │
+//  ╰──────────────────────────────────────────────────────────────────────────────╯
+async function commandVerifyDeleteBacklinks(scope) {
+
+  // commandVerifyDeleteBacklinks - Create Extensions Global Storage Folder if it Does Not Exist 
+  globalStoragePath = myContext.globalStoragePath;
+  globalStorageFilenamePath = path.join(globalStoragePath, globalStorageFilename);
+  if (!fs.existsSync(globalStoragePath)) {
+    fs.mkdirSync(globalStoragePath, { recursive: true });
+    vscode.window.showInformationMessage('No backlinks Data Available...','OK');
+    return; // No need to continue if backlinks data does not exist
+  };
+
+  // commandVerifyDeleteBacklinks - Load Json Data File From Extensions Global Storage Folder if it Exists 
+  let fileJsonObject = [];
+  if (fs.existsSync(globalStorageFilenamePath)) {
+    let file = fs.readFileSync(globalStorageFilenamePath,"utf-8");
+    fileJsonObject = JSON.parse(file);
+  } else {
+    vscode.window.showInformationMessage('No backlinks Data Available...','OK');
+    // No need to continue if data file does not exist
+    return;
+  };
+  // No need to continue if data file contains no data
+  if (fileJsonObject.length == 0 || null || undefined) {
+    vscode.window.showInformationMessage('No backlinks Data Available...','OK');
+    return;
+  };
+
+  // commandVerifyDeleteBacklinks - Get Projects Path 
+  let projectPath = vscode.workspace.workspaceFolders[0].uri.fsPath;
+
+  // commandVerifyDeleteBacklinks - Check if Data File Contains Deleted Files Backlinks 
+  let projectBacklinksList = [];
+  let allBacklinksList = [];
+  let newBacklinkItemList = [];
+  for (let i = 0; i < fileJsonObject.length; i ++) {
+    let newBacklinkItem = {};
+    newBacklinkItem.id = fileJsonObject[i].id;
+    newBacklinkItem.type = fileJsonObject[i].type;
+    newBacklinkItem.vscodePath = fileJsonObject[i].vscodePath;
+    newBacklinkItem.obsidianPath = fileJsonObject[i].obsidianPath;
+    newBacklinkItem.lineNumber = fileJsonObject[i].lineNumber;
+    newBacklinkItem.backlinkText = fileJsonObject[i].backlinkText;
+    let idRegEx = new RegExp(`ID: ?${newBacklinkItem.id}`,'gm');
+    let obsidianFilename = fileJsonObject[i].obsidianPath;
+    let fileObsidian;
+    if (fs.existsSync(obsidianFilename)) {
+      fileObsidian = fs.readFileSync(obsidianFilename,"utf-8");
+      newBacklinkItem.fileObsidianValid = true;
+    } else {
+      fileObsidian = '';
+      newBacklinkItem.fileObsidianValid = false;
+    };
+    let vscodeFilename = fileJsonObject[i].vscodePath;
+    let fileVscode;
+    if (fs.existsSync(vscodeFilename)) {
+      fileVscode = fs.readFileSync(vscodeFilename,"utf-8");
+      newBacklinkItem.fileVscodeValid = true;
+    } else {
+      fileVscode = '';
+      newBacklinkItem.fileVscodeValid = false;
+    };
+    let isValidObdidian = idRegEx.test(fileObsidian);
+    idRegEx.lastIndex = 0;
+    let isValidVscode = idRegEx.test(fileVscode);
+    idRegEx.lastIndex = 0;
+    if (isValidObdidian) {
+      if (isValidVscode) {
+        newBacklinkItem.backlinkStatusVscode = true;
+        newBacklinkItem.backlinkStatusObsidian = true;
+        newBacklinkItem.backlinkStatusString = `'${newBacklinkItem.backlinkText}'`;
+        allBacklinksList.push({label: newBacklinkItem.backlinkStatusString, description: `${newBacklinkItem.id}`});
+        if (vscodeFilename.indexOf(projectPath) >= 0) {
+          projectBacklinksList.push({label: newBacklinkItem.backlinkStatusString, description: `${newBacklinkItem.id}`});
+        };
+        newBacklinkItemList.push(newBacklinkItem);
+      } else {
+        newBacklinkItem.backlinkStatusObsidian = true;
+        newBacklinkItem.backlinkStatusVscode = false;
+        newBacklinkItem.backlinkStatus = false;
+        newBacklinkItem.backlinkStatusString = `'${newBacklinkItem.backlinkText}' *** Backlink is Invalid ***`;
+        allBacklinksList.push({label: newBacklinkItem.backlinkStatusString, description: `${newBacklinkItem.id}`});
+        if (vscodeFilename.indexOf(projectPath) >= 0) {
+          projectBacklinksList.push({label: newBacklinkItem.backlinkStatusString, description: `${newBacklinkItem.id}`});
+        };
+        newBacklinkItemList.push(newBacklinkItem);
+      };
+    } else {
+      newBacklinkItem.backlinkStatusObsidian = false;
+      newBacklinkItem.backlinkStatusVscode = false;
+      newBacklinkItem.backlinkStatusString = `'${newBacklinkItem.backlinkText}' *** Backlink is Invalid ***`;
+      allBacklinksList.push({label: newBacklinkItem.backlinkStatusString, description: `${newBacklinkItem.id}`});
+      if (vscodeFilename.indexOf(projectPath) >= 0) {
+        projectBacklinksList.push({label: newBacklinkItem.backlinkStatusString, description: `${newBacklinkItem.id}`});
+      };
+      newBacklinkItemList.push(newBacklinkItem);
+    };
+  };
+
+  // commandVerifyDeleteBacklinks - Prompt User With a List of Backlinks to Delete 
+  let options = {
+    placeHolder: "Select any backlinks you wish to delete",
+    title: `---=== Vault: ${defaultVault}  -  Default Note: ${defaultNote} - Daily Note: ${dailyNoteFilename} ===---`,
+    canPickMany: true
+  };
+  let pick;
+  if (scope == 'Project') {
+    if (projectBacklinksList.length == 0) {
+      vscode.window.showInformationMessage('No Project Backlinks Available...','OK');
+      return;
+    };
+    pick = await vscode.window.showQuickPick(projectBacklinksList, options);
+  } else {
+      pick = await vscode.window.showQuickPick(allBacklinksList, options);
+  };
+
+  // commandVerifyDeleteBacklinks - User Canceled 
+  if (!pick || pick.length == 0) {
+    return;
+  };
+
+  // commandVerifyDeleteBacklinks - Process Selected Picks 
+  for (let idx = 0; idx < pick.length; idx ++) {
+    let id = pick[idx].description
+    let backlinkText = fileJsonObject[idx].backlinkText;
+    let idRegExVscode = new RegExp(`(.*?)(${separatorsRegexString})(.+?)(${separatorsRegexString})(File: ?)(.+?)(${separatorsRegexString})(ID: ?)(${id})( ?)(${separatorsRegexString})(\\r?\\n)?`);
+    let idRegExTypeLink = new RegExp(`(\\[)(.+?)(${separatorsRegexString})(File: ?)(.+?)(${separatorsRegexString})(ID: ?)(${id})(\\]\\()(vscode:\\/\\/file)(.+)(:)(\\d+)(\\))(\\r?\\n)?`);
+    let idRegExTypeButton = new RegExp(`(\`\`\`button\\r?\\n)(name )(.+?)(${separatorsRegexString})(File: )(.+?)(${separatorsRegexString})(ID: ?)(${id})(\\r?\\ntype link)(\\r?\\nclass .+|)?(\\r?\\naction )(vscode:\\/\\/file\\/)(.+?)(:)(\\d+)(\\r?\\n\`\`\`)(\\r?\\n)?`);
+    for (let index = 0; index < newBacklinkItemList.length; index ++) {
+      if (id == newBacklinkItemList[index].id) {
+        let type = newBacklinkItemList[index].type;
+        let obsidianPath = newBacklinkItemList[index].obsidianPath;
+        let vscodePath = newBacklinkItemList[index].vscodePath;
+        let lineNumber = newBacklinkItemList[index].lineNumber;
+        if (newBacklinkItemList[index].fileVscodeValid) {
+          if (newBacklinkItemList[index].backlinkStatusVscode) {
+            let fileVscode = fs.readFileSync(vscodePath,"utf-8");
+            let matchVscode = fileVscode.replace(idRegExVscode, `$1$12`);
+            fs.writeFileSync(vscodePath, matchVscode);
+          };
+        };
+        if (newBacklinkItemList[index].fileObsidianValid) {
+          if (newBacklinkItemList[index].backlinkStatusObsidian) {
+            let fileObsidian = fs.readFileSync(obsidianPath,"utf-8");
+            let matchObsidian;
+            if (type == 'link') {
+              matchObsidian = fileObsidian.replace(idRegExTypeLink, "");
+            } else {
+              matchObsidian = fileObsidian.replace(idRegExTypeButton, "");
+            };
+          fs.writeFileSync(obsidianPath, matchObsidian);
+          };
+        };  
+        removeBacklinkDataFile(id);
+      };  
+    };  
+  };  
 
 };
 
@@ -220,32 +475,40 @@ function updateBacklinksOnSave(document) {
     if (document.fileName == fileJsonObject[i].vscodePath) {
       let id = fileJsonObject[i].id;
       let type = fileJsonObject[i].type;
+      let oldBacklinkText = fileJsonObject[i].backlinkText;
       let vscodeFile = fs.readFileSync(document.fileName,"utf-8");
       let vscodeFileLines = vscodeFile.split('\n');
       let newLineNumber;
-      let idRegEx = new RegExp(`(.*)(${id}).*`);
-      let idRegExTypeLink = new RegExp(`(\\[.+File: )(.+)( \\| ID: )(${id})(\\]\\(.+\\/)(.+)(:)(\\d+)(\\)\\r?\\n?)`);
-      let idRegExTypeButton = new RegExp(`(\`\`\`button\\r?\\n.+?File: )(.+)( \\| ID: )(${id})(\\r?\\ntype link(?:\\r?\\nclass .+)?\\r?\\naction .+\\/)(.+)(:)(\\d+)(\\r?\\n\`\`\`\\r?\\n?)`);
+      let idRegExVscode = new RegExp(`(.*?)(${separatorsRegexString})(.+?)(${separatorsRegexString})(File: ?)(.+?)(${separatorsRegexString})(ID: ?)(${id})( ?)(${separatorsRegexString})`);
+      let idRegExTypeLink = new RegExp(`(\\[)(.+?)(${separatorsRegexString})(File: ?)(.+?)(${separatorsRegexString})(ID: ?)(${id})(\\]\\()(vscode:\\/\\/file)(.+)(:)(\\d+)(\\))`);
+      let idRegExTypeButton = new RegExp(`(\`\`\`button\\r?\\n)(name )(.+?)(${separatorsRegexString})(File: )(.+?)(${separatorsRegexString})(ID: ?)(${id})(\\r?\\ntype link)(\\r?\\nclass .+|)?(\\r?\\naction )(vscode:\\/\\/file\\/)(.+?)(:)(\\d+)(\\r?\\n\`\`\`)`);
       for (let idx = 0; idx < vscodeFileLines.length; idx++) {
-        let test = idRegEx.test(vscodeFileLines[idx]);
-        if (test) {
+        idRegExVscode.lastIndex = 0;
+        let test = idRegExVscode.exec(vscodeFileLines[idx]);
+        idRegExVscode.lastIndex = 0;
+        if (test != null) {
           newLineNumber = idx;
           let oldLineNumber = fileJsonObject[i].lineNumber;
-          if (newLineNumber != oldLineNumber) {
-            // Save the updated data file
+          let newBacklinkText = test[3];
+          if (newLineNumber != oldLineNumber || newBacklinkText != oldBacklinkText) {
+            // updateBacklinksOnSave - Save the updated data file 
             fileJsonObject[i].lineNumber = newLineNumber;
+            fileJsonObject[i].backlinkText = newBacklinkText;
             fs.writeFileSync(globalStorageFilenamePath, JSON.stringify(fileJsonObject));
-            // Load and update the obsidian file then save it
+            // updateBacklinksOnSave - Load and update the obsidian file then save it 
             newLineNumber++;
             let obsidianFilename = fileJsonObject[i].obsidianPath;
-            let file = fs.readFileSync(obsidianFilename,"utf-8");
-            let match;
-            if (type == 'link') {
-              match = file.replace(idRegExTypeLink, `$1$2$3$4$5$6$7${newLineNumber}$9`);
-            } else {
-              match = file.replace(idRegExTypeButton, `$1$2$3$4$5$6$7${newLineNumber}$9`);
+            // updateBacklinksOnSave - Update Obsidian File Only if it Exists 
+            if (fs.existsSync(obsidianFilename)) {
+              let file = fs.readFileSync(obsidianFilename,"utf-8");
+              let match;
+              if (type == 'link') {
+                match = file.replace(idRegExTypeLink, `$1${newBacklinkText}$3$4$5$6$7$8$9$10$11$12${newLineNumber}$14`);
+              } else {
+                match = file.replace(idRegExTypeButton, `$1$2${newBacklinkText}$4$5$6$7$8$9$10$11$12$13$14$15${newLineNumber}$17`);
+              };
+              fs.writeFileSync(obsidianFilename, match);
             };
-            fs.writeFileSync(obsidianFilename, match);
           }
         };
       };
@@ -293,31 +556,25 @@ function updateBacklinksOnDelete(deletedFiles) {
   for (let i = 0; i < fileJsonObject.length; i ++) {
     if (deletedFilesList.includes(fileJsonObject[i].vscodePath)) {
       let id = fileJsonObject[i].id;
-      let idRegExTypeLink = new RegExp(`(\\[.+File: )(.+)( \\| ID: )(${id})(\\]\\(.+\\/)(.+)(:)(\\d+)(\\)\\r?\\n?)`);
-      let idRegExTypeButton = new RegExp(`(\`\`\`button\\r?\\n.+?File: )(.+)( \\| ID: )(${id})(\\r?\\ntype link(?:\\r?\\nclass .+)?\\r?\\naction .+\\/)(.+)(:)(\\d+)(\\r?\\n\`\`\`\\r?\\n?)`);
+      let idRegExTypeLink = new RegExp(`(\\[)(.+?)(${separatorsRegexString})(File: ?)(.+?)(${separatorsRegexString})(ID: ?)(${id})(\\]\\()(vscode:\\/\\/file)(.+)(:)(\\d+)(\\))`);
+      let idRegExTypeButton = new RegExp(`(\`\`\`button\\r?\\n)(name )(.+?)(${separatorsRegexString})(File: )(.+?)(${separatorsRegexString})(ID: ?)(${id})(\\r?\\ntype link)(\\r?\\nclass .+|)?(\\r?\\naction )(vscode:\\/\\/file\\/)(.+?)(:)(\\d+)(\\r?\\n\`\`\`)`);
       let type = fileJsonObject[i].type;
       let match;
       let obsidianFilename = fileJsonObject[i].obsidianPath;
-      let file = fs.readFileSync(obsidianFilename,"utf-8");
-      if (type == 'link') {
-        match = file.replace(idRegExTypeLink, "");
-      } else {
-        match = file.replace(idRegExTypeButton, "");
+      // updateBacklinksOnDelete - Update Obsidian File Only if it Exists 
+      if (fs.existsSync(obsidianFilename)) {
+        let file = fs.readFileSync(obsidianFilename,"utf-8");
+        if (type == 'link') {
+          match = file.replace(idRegExTypeLink, "");
+        } else {
+          match = file.replace(idRegExTypeButton, "");
+        };
+        fs.writeFileSync(obsidianFilename, match);
       };
-      fs.writeFileSync(obsidianFilename, match);
       removeBacklinkDataFile(id);
     };
   };
 };
-
-  // REVIEW: Link Rename Test | File: 2023-11-30 | ID: 1701380961
-  // REVIEW: Button Rename Test | File: 2023-11-30 | ID: 1701381009
-
-  // id: id,
-  // type: type,
-  // vscodePath: vscodePath,
-  // obsidianPath: obsidianPath,
-  // lineNumber: lineNumber,
 
 
 //  ╭──────────────────────────────────────────────────────────────────────────────╮
@@ -350,35 +607,42 @@ function updateBacklinksOnRename(newUriOldUriArray) {
   };
 
   // updateBacklinksOnRename - Get All Renamed Files Old and New Uri's (Full Path) 
-  let renamedNewUriList = [];
-  let renamedOldUriList = [];
+  let renamedNewUriListfsPath = [];
+  let renamedNewUriListPath = [];
+  let renamedOldUriListfsPath = [];
   for (let i = 0; i < newUriOldUriArray.files.length; i++) {
-    renamedNewUriList.push(newUriOldUriArray.files[i].newUri.fsPath);
-    renamedOldUriList.push(newUriOldUriArray.files[i].oldUri.fsPath);
+    renamedNewUriListfsPath.push(newUriOldUriArray.files[i].newUri.fsPath);
+    renamedNewUriListPath.push(newUriOldUriArray.files[i].newUri.path);
+    renamedOldUriListfsPath.push(newUriOldUriArray.files[i].oldUri.fsPath);
   };
 
   // updateBacklinksOnRename - Check if Data File Contains Renamed Files (Full Path) 
   for (let i = 0; i < fileJsonObject.length; i ++) {
-    if (renamedOldUriList.includes(fileJsonObject[i].vscodePath)) {
+    if (renamedOldUriListfsPath.includes(fileJsonObject[i].vscodePath)) {
       // Rename Data files VSCode path
-      let renamedIndex = renamedOldUriList.indexOf(fileJsonObject[i].vscodePath);
-      let newRenamedUri = renamedNewUriList[renamedIndex];
-      let newFilename = newRenamedUri.split('\\').pop();
+      let renamedIndex = renamedOldUriListfsPath.indexOf(fileJsonObject[i].vscodePath);
+      let newRenamedUri = renamedNewUriListfsPath[renamedIndex];
+      let newRenamedUriPath = renamedNewUriListPath[renamedIndex];
+      let newFilename = newRenamedUri.split(path.sep).pop();
       fileJsonObject[i].vscodePath = newRenamedUri;
       // Rename Obsidian link - File: NEWNAME and file path vscode://.../FILENAME
       let id = fileJsonObject[i].id;
-      let idRegExTypeLink = new RegExp(`(\\[.+File: )(.+)( \\| ID: )(${id})(\\]\\(.+\\/)(.+)(:)(\\d+)(\\)\\r?\\n?)`);
-      let idRegExTypeButton = new RegExp(`(\`\`\`button\\r?\\n.+?File: )(.+)( \\| ID: )(${id})(\\r?\\ntype link(?:\\r?\\nclass .+)?\\r?\\naction .+\\/)(.+)(:)(\\d+)(\\r?\\n\`\`\`\\r?\\n?)`);
+      let idRegExTypeLink = new RegExp(`(\\[)(.+?)(${separatorsRegexString})(File: ?)(.+?)(${separatorsRegexString})(ID: ?)(${id})(\\]\\()(vscode:\\/\\/file)(.+)(:)(\\d+)(\\))`);
+      let idRegExTypeButton = new RegExp(`(\`\`\`button\\r?\\n)(name )(.+?)(${separatorsRegexString})(File: )(.+?)(${separatorsRegexString})(ID: ?)(${id})(\\r?\\ntype link)(\\r?\\nclass .+|)?(\\r?\\naction )(vscode:\\/\\/file)(.+?)(:)(\\d+)(\\r?\\n\`\`\`)`);
       let type = fileJsonObject[i].type;
       let match;
-      let obsidianFilenamePath = fileJsonObject[i].obsidianPath;
-      let file = fs.readFileSync(obsidianFilenamePath,"utf-8");
-      if (type == 'link') {
-        match = file.replace(idRegExTypeLink,`$1${newFilename}$3$4$5${newFilename}$7$8$9`);
-      } else {
-        match = file.replace(idRegExTypeButton, `$1${newFilename}$3$4$5${newFilename}$7$8$9`);
+      let obsidianFilename = fileJsonObject[i].obsidianPath;
+      // updateBacklinksOnRename - Update Obsidian File Only if it Exists 
+      if (fs.existsSync(obsidianFilename)) {
+        let file = fs.readFileSync(obsidianFilename,"utf-8");
+        if (type == 'link') {
+          // TODO: Need to add the whole path noy just the filename
+          match = file.replace(idRegExTypeLink,`$1$2$3$4${newFilename}$6$7$8$9$10${newRenamedUriPath}$12$13$14`);
+        } else {
+          match = file.replace(idRegExTypeButton, `$1$2$3$4$5${newFilename}$7$8$9$10$11$12$13${newRenamedUriPath}$15$16$17`);
+        };
+        fs.writeFileSync(obsidianFilename, match);
       };
-      fs.writeFileSync(obsidianFilenamePath, match);
     };
   };
 
@@ -455,7 +719,7 @@ async function setDefaultVaultNote() {
   quickpick.matchOnDescription = true;
   objMap.forEach((item, key) => {
     let vaultPath = item.path;
-    let vaultName = vaultPath.split('\\').pop();
+    let vaultName = vaultPath.split(path.sep).pop();
     if (item.open === true) {
       vaultNames.push({label: vaultName, path: vaultPath, description: "Currently open or last opened vault"});
     } else {
@@ -549,6 +813,8 @@ async function connectWithObsidian() {
   dailyNoteFilename = "";
   dailyNotePathFilename = "";
   let settings = vscode.workspace.getConfiguration("obsidian-md-vsc");
+  buttonClass = settings.get("buttonClass");
+  backlinkSeparator = settings.get("backlinkSeparator");
   defaultVault = settings.get("defaultVault");
   defaultVaultPath = settings.get("defaultVaultPath");
   defaultNote = settings.get("defaultNote");
@@ -664,7 +930,7 @@ async function connectWithObsidian() {
     };
     const bookmarkedData = JSON.parse(data);
     for (let i = 0; i < bookmarkedData.items.length; i++) {
-// TODO Check for other types here
+      // TODO Check for other types here???
       if (bookmarkedData.items[i].type == 'file') {
         let cleanTitle = bookmarkedData.items[i].path.split(/[/\\]+/).pop();
         bookmarked.push({title: bookmarkedData.items[i].title || cleanTitle, path: bookmarkedData.items[i].path, subpath: bookmarkedData.items[i].subpath || '', ctime: bookmarkedData.items[i].ctime});
@@ -779,7 +1045,7 @@ async function connectWithObsidian() {
     placeHolder: "How would you like to connect to Obsidian?",
     title: `---=== Vault: ${defaultVault}  -  Default Note: ${defaultNote} ===---`
   };
-  let rootLabels = [{label: 'Open in Obsidian...'},{label: 'Create New...'},{label: 'Daily Note...'},{label: `Send to default note: '${defaultNote}'...`},{label: `Open default note: '${defaultNote}' in VSCode`},{label: `Open vault: '${defaultVault}' in VSCode`}]
+  let rootLabels = [{label: 'Open in Obsidian...'},{label: 'Create New...'},{label: 'Daily Note...'},{label: `Send to default note: '${defaultNote}'...`},{label: `Open default note: '${defaultNote}' in VSCode`},{label: `Open vault: '${defaultVault}' in VSCode`},{label: `Verify/Delete Backlinks (Project)`},{label: `Verify/Delete Backlinks (Global)`}];
   const pick = await vscode.window.showQuickPick(rootLabels, options);
 
   // connectWithObsidian - User Canceled 
@@ -803,10 +1069,18 @@ async function connectWithObsidian() {
     obURI = `vscode://file/${pathToNote}`;
     vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
     return;
-  } else {
-    // connectWithObsidian - Open vault: ${defaultVault} in VSCode 
+  } else if (pick.label === `Open default note: '${defaultNote}' in VSCode`) {
+    // connectWithObsidian - Open vault: '${defaultVault}' in VSCode 
     obURI = `vscode://file/${defaultVaultPath}`;
     vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+    return;
+  } else if (pick.label === `Verify/Delete Backlinks (Project)`) {
+    // connectWithObsidian - Verify/Delete Backlinks (Project) 
+    commandVerifyDeleteBacklinks('Project');
+    return;
+  } else {
+    // connectWithObsidian - Verify/Delete Backlinks (Global) 
+    commandVerifyDeleteBacklinks('Global');
     return;
   }
 };
@@ -1400,7 +1674,7 @@ async function commandDaily() {
             let linkText = await vscode.window.showInputBox(options);
             if (linkText != undefined) { 
               if (linkText != "") {
-                let linkDef = `\n[${backlinkTypePick} ${linkText} | File: ${currentDocumentName} | ID: ${unixTimestamp}](${vscodeUri})`
+                let linkDef = `\n[${backlinkTypePick} ${linkText} ${backlinkSeparator} File: ${currentDocumentName} ${backlinkSeparator} ID: ${unixTimestamp}](${vscodeUri})`
                 vscode.env.clipboard.writeText(linkDef);
                 if (pick.label == 'Prepend to header...') {
                   obURI = `obsidian://advanced-uri?vault=${defaultVault}&daily=true&heading=${headerPick.label}&clipboard=true&mode=prepend`
@@ -1411,9 +1685,10 @@ async function commandDaily() {
                 }
                 const editor = vscode.window.activeTextEditor;
                 await editor.edit(editBuilder => {
-                    editBuilder.replace(new vscode.Range(lineNumber-1, columnNumber-1, lineNumber-1, columnNumber-1), `${backlinkTypePick} ${linkText} | File: ${dailyNoteFilename} | ID: ${unixTimestamp}`);
+                    editBuilder.replace(new vscode.Range(lineNumber-1, columnNumber-1, lineNumber-1, columnNumber-1), `${backlinkSeparator} ${backlinkTypePick} ${linkText} ${backlinkSeparator} File: ${dailyNoteFilename} ${backlinkSeparator} ID: ${unixTimestamp} ${backlinkSeparator}`);
                 }).catch(err => console.log(err));
-                addBacklinkDataFile(unixTimestamp, "link", currentDocumentPathFilename, dailyNotePathFilename, lineNumber-1);
+                let backlinkText = `${backlinkTypePick} ${linkText}`;
+                addBacklinkDataFile(unixTimestamp, "link", currentDocumentPathFilename, dailyNotePathFilename, lineNumber-1, backlinkText);
               }
             }
           }
@@ -1443,9 +1718,9 @@ async function commandDaily() {
               let buttonDef;
               if (buttonText != "") {
                 if (buttonClass == "") {
-                  buttonDef = `\n\`\`\`button\nname ${backlinkTypePick} ${buttonText} | File: ${currentDocumentName} | ID: ${unixTimestamp}\ntype link\naction ${vscodeUri}\n\`\`\`\n`
+                  buttonDef = `\n\`\`\`button\nname ${backlinkTypePick} ${buttonText} ${backlinkSeparator} File: ${currentDocumentName} ${backlinkSeparator} ID: ${unixTimestamp}\ntype link\naction ${vscodeUri}\n\`\`\`\n`
                 } else {
-                  buttonDef = `\n\`\`\`button\nname ${backlinkTypePick} ${buttonText} | File: ${currentDocumentName} | ID: ${unixTimestamp}\ntype link\nclass ${buttonClass}\naction ${vscodeUri}\n\`\`\`\n`
+                  buttonDef = `\n\`\`\`button\nname ${backlinkTypePick} ${buttonText} ${backlinkSeparator} File: ${currentDocumentName} ${backlinkSeparator} ID: ${unixTimestamp}\ntype link\nclass ${buttonClass}\naction ${vscodeUri}\n\`\`\`\n`
                 };
                 vscode.env.clipboard.writeText(buttonDef);
                 if (pick.label == 'Prepend to header...') {
@@ -1457,9 +1732,10 @@ async function commandDaily() {
                 };
                 const editor = vscode.window.activeTextEditor;
                 await editor.edit(editBuilder => {
-                    editBuilder.replace(new vscode.Range(lineNumber-1, columnNumber-1, lineNumber-1, columnNumber-1), `${backlinkTypePick} ${buttonText} | File: ${dailyNoteFilename} | ID: ${unixTimestamp}`);
+                    editBuilder.replace(new vscode.Range(lineNumber-1, columnNumber-1, lineNumber-1, columnNumber-1), `${backlinkSeparator} ${backlinkTypePick} ${buttonText} ${backlinkSeparator} File: ${dailyNoteFilename} ${backlinkSeparator} ID: ${unixTimestamp} ${backlinkSeparator}`);
                 }).catch(err => console.log(err));
-                addBacklinkDataFile(unixTimestamp, "button", currentDocumentPathFilename, dailyNotePathFilename, lineNumber-1);
+                let backlinkText = `${backlinkTypePick} ${buttonText}`;
+                addBacklinkDataFile(unixTimestamp, "button", currentDocumentPathFilename, dailyNotePathFilename, lineNumber-1, backlinkText);
               }
             }
           }
@@ -1882,7 +2158,7 @@ async function commandSendto() {
           let linkText = await vscode.window.showInputBox(options);
           if (linkText != undefined) { 
             if (linkText != "") {
-              let linkDef = `\n[${backlinkTypePick} ${linkText} | File: ${currentDocumentName} | ID: ${unixTimestamp}](${vscodeUri})`
+              let linkDef = `\n[${backlinkTypePick} ${linkText} ${backlinkSeparator} File: ${currentDocumentName} ${backlinkSeparator} ID: ${unixTimestamp}](${vscodeUri})`
               vscode.env.clipboard.writeText(linkDef);
               if (pick.label == 'Prepend to header...') {
                 obURI = `obsidian://advanced-uri?vault=${defaultVault}&filepath=${defaultNote}&heading=${headerPick.label}&clipboard=true&mode=prepend`
@@ -1893,9 +2169,10 @@ async function commandSendto() {
               }
               const editor = vscode.window.activeTextEditor;
               await editor.edit(editBuilder => {
-                  editBuilder.replace(new vscode.Range(lineNumber-1, columnNumber-1, lineNumber-1, columnNumber-1), `${backlinkTypePick} ${linkText} | File: ${defaultNote} | ID: ${unixTimestamp}`);
+                  editBuilder.replace(new vscode.Range(lineNumber-1, columnNumber-1, lineNumber-1, columnNumber-1), `${backlinkSeparator} ${backlinkTypePick} ${linkText} ${backlinkSeparator} File: ${defaultNote} ${backlinkSeparator} ID: ${unixTimestamp} ${backlinkSeparator}`);
               }).catch(err => console.log(err));
-              addBacklinkDataFile(unixTimestamp, "link", currentDocumentPathFilename, defaultNotePathFilename, lineNumber-1);
+              let backlinkText = `${backlinkTypePick} ${linkText}`;
+              addBacklinkDataFile(unixTimestamp, "link", currentDocumentPathFilename, defaultNotePathFilename, lineNumber-1, backlinkText);
             }
           }
         }
@@ -1925,9 +2202,9 @@ async function commandSendto() {
             if (buttonText != "") {
               let buttonDef;
               if (buttonClass == "") {
-                buttonDef = `\n\`\`\`button\nname ${backlinkTypePick} ${buttonText} | File: ${currentDocumentName} | ID: ${unixTimestamp}\ntype link\naction ${vscodeUri}\n\`\`\`\n`
+                buttonDef = `\n\`\`\`button\nname ${backlinkTypePick} ${buttonText} ${backlinkSeparator} File: ${currentDocumentName} ${backlinkSeparator} ID: ${unixTimestamp}\ntype link\naction ${vscodeUri}\n\`\`\`\n`
               } else {
-                buttonDef = `\n\`\`\`button\nname ${backlinkTypePick} ${buttonText} | File: ${currentDocumentName} | ID: ${unixTimestamp}\ntype link\nclass ${buttonClass}\naction ${vscodeUri}\n\`\`\`\n`
+                buttonDef = `\n\`\`\`button\nname ${backlinkTypePick} ${buttonText} ${backlinkSeparator} File: ${currentDocumentName} ${backlinkSeparator} ID: ${unixTimestamp}\ntype link\nclass ${buttonClass}\naction ${vscodeUri}\n\`\`\`\n`
               }
               vscode.env.clipboard.writeText(buttonDef);
               if (pick.label == 'Prepend to header...') {
@@ -1939,9 +2216,10 @@ async function commandSendto() {
               }
               const editor = vscode.window.activeTextEditor;
               await editor.edit(editBuilder => {
-                  editBuilder.replace(new vscode.Range(lineNumber-1, columnNumber-1, lineNumber-1, columnNumber-1), `${backlinkTypePick} ${buttonText} | File: ${defaultNote} | ID: ${unixTimestamp}`);
+                  editBuilder.replace(new vscode.Range(lineNumber-1, columnNumber-1, lineNumber-1, columnNumber-1), `${backlinkSeparator} ${backlinkTypePick} ${buttonText} ${backlinkSeparator} File: ${defaultNote} ${backlinkSeparator} ID: ${unixTimestamp} ${backlinkSeparator}`);
               }).catch(err => console.log(err));
-              addBacklinkDataFile(unixTimestamp, "button", currentDocumentPathFilename, defaultNotePathFilename, lineNumber-1);
+              let backlinkText = `${backlinkTypePick} ${buttonText}`;
+              addBacklinkDataFile(unixTimestamp, "button", currentDocumentPathFilename, defaultNotePathFilename, lineNumber-1, backlinkText);
             }
           }
         }

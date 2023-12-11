@@ -2,7 +2,7 @@
   "name": "obsidian-md-vsc",
   "displayName": "Obsidian MD for VSCode",
   "decription": "Connect to Obsidian from Visual Studio Code",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "author": "William McKeever <willmck63@gmail.com>",
   "publisher": "willasm",
   "license": "MIT",
@@ -110,6 +110,27 @@
           "type": "string",
           "description": "Default button class Used for Buttons plugin (optional)",
           "default": ""
+        },
+        "obsidian-md-vsc.backlinkSeparator": {
+          "type": "string",
+          "description": "Default seperator character used in Backlinks",
+          "default": "|",
+          "enum": [
+            "|",
+            "~",
+            "•",
+            "·",
+            "°",
+            "¦",
+            "§",
+            "¥",
+            "¤",
+            "º",
+            "—",
+            "¡",
+            "«",
+            "»"
+          ]
         }
       }
     }

@@ -4,6 +4,25 @@
 ![](https://img.shields.io/visual-studio-marketplace/release-date/willasm.obsidian-md-vsc)
 ![](https://img.shields.io/visual-studio-marketplace/last-updated/willasm.obsidian-md-vsc)
 
+# Important Information for v1.2.0 Update
+The backlinks data file used by the extension has changed what information it saves to its data file. It now also stores the backlink description text. This was required to allow the extension to update the descripion text in Obsidian after it has been edited in VSCode. On first launch of v1.2.0 the extensions data file will automatically be updated to include existing backlinks description text from the VSCode file (Note: A backup of the file is created before the update). The downside of this process is that it has to retrieve all the text up to the begining of the line, that is the only way possible as there is no way for the extension to know what else is on that line. That is the reason for making this change in the first place, so the extension will be able to know where the backlink begins. It will insert 2 more backlink separators, one at the end and one at the begining. This will mean you will need to edit the backlink text slightly. Here are some examples...
+
+Before update...
+```js
+  let fileJsonObject = [];   // TODO: Your description text | File: Obsidian Filename | ID: 1701935244
+```
+
+After update... This would cause an error in your code.
+```js
+|  let fileJsonObject = [];   // TODO: Your description text | File: Obsidian Filename | ID: 1701935244 |
+```
+
+To correct this simply move the first seperator to the begining of the backlinks description text, like this.
+```js
+  let fileJsonObject = [];   // | TODO: Your description text | File: Obsidian Filename | ID: 1701935244 |
+```
+
+I apologise for any inconvenience this may cause anyone. Since it is a very new extension with not a lot of downloads yet I'm hoping the impact will be minimal. This change was absolutely necessary to include any new features in the future. If this causes any major issues for you please do contact me, it does create a backup of the data file in the extensions global storage folder first so all backlinks can be restored if necessary. If you need to you can always just re-create your backlinks and then delete the old ones.
 
 # Obsidian MD for VSCode
 Connect to Obsidian directly from within Visual Studio Code.
@@ -213,6 +232,9 @@ All the `Insert selected text...` items will not be shown when no text is select
 		- Insert VSCode backlink buttom (Will only appear when Buttons plugin is installed)
 - Open note: (Default Note) in VSCode
 - Open vault: (Default Vault) in VSCode
+- Verify/Delete Backlinks (Project)
+- Verify/Delete Backlinks (Global)
+
 
 ## Release Notes
 See the [Release Notes](RELEASE.md) for details.
