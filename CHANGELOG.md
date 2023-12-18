@@ -2,6 +2,10 @@
 
 <!-- ## [v-inc] ${YEAR4}-${MONTHNUMBER}-${DATE} -->
 
+## [1.2.1] 2023-12-18
+### Fixed
+- Typos in the manifest file
+
 ## [1.2.0] 2023-12-11
 ### Updated
 - The backlinks data file used by the extension has added the backlink description text to its data file
