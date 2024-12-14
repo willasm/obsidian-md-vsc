@@ -39,7 +39,7 @@ that works on top of your local folder of plain text files. You can get more inf
 - Open your entire vault in Visual Studio Code.
 - Send [Backlinks](#backlinks) to your projects code files.
 
-## Requirments
+## Requirements
 
 - [Obsidian.MD](https://obsidian.md/) A second brain, for you, forever.
 
