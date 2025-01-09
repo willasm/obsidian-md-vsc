@@ -9,6 +9,13 @@
 -->
 # Release Notes
 
+## [1.3.0] 2025-01-09
+### Internal Changes
+- Replace deprecated(?) obsidian.json usage with Obsidian URI protocol (internal change)
+- Update vault connection logic to use URI-based interactions
+- Use VS Code file dialogs for vault and note selection instead of reading obsidian.json
+- No changes to available commands or user interface
+
 <!-- ## [v-inc] ${YEAR4}-${MONTHNUMBER}-${DATE} -->
 
 ## [1.2.1] 2023-12-18
