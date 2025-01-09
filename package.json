@@ -144,12 +144,14 @@
   },
   "bugs": {
     "url": "https://github.com/willasm/obsidian-md-vsc/issues",
-		"email": "willmck63@gmail.com"
+    "email": "willmck63@gmail.com"
   },
   "homepage": "https://github.com/willasm/obsidian-md-vsc#readme",
-  "scripts": {},
   "dependencies": {
     "appdata-path": "^1.0.0",
     "moment": "^2.29.4"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.32.0"
   }
 }

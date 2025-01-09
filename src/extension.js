@@ -48,11 +48,11 @@ let currentSelection;
 //  ╰──────────────────────────────────────────────────────────────────────────────╯
 async function activate(context) {
 
-  // Activate - Initialize Extension 
+  // Activate - Initialize Extension 
   //---------------------------------------------------------------------------------------------------------
   myContext = context;                    // Save context
 
-  // Activate - Update Backlinks Data File 
+  // Activate - Update Backlinks Data File 
   let extensionInfo =vscode.extensions.getExtension('willasm.obsidian-md-vsc');
   let extensionPackage = extensionInfo.packageJSON;
   let currentVersion = extensionPackage.version;
@@ -60,7 +60,7 @@ async function activate(context) {
     updateOldDataFile();
   };
 
-  // Activate - Get Default Vault & Note from Settings 
+  // Activate - Get Default Vault & Note from Settings 
   let settings = vscode.workspace.getConfiguration("obsidian-md-vsc");
   defaultVault = settings.get("defaultVault");
   defaultVaultPath = settings.get("defaultVaultPath");
@@ -70,24 +70,11 @@ async function activate(context) {
   defaultNotePathFilename = path.join(defaultVaultPath, defaultNote);
   defaultNotePathFilename += '.md'
   BacklinkPrefix = settings.get("BacklinkPrefix");
-  // Activate - Get OS, Possible return values are 'aix', 'darwin', 'freebsd','linux', 'openbsd', 'sunos', and 'win32' 
-  osPlatform = os.platform();
-  if (osPlatform === 'win32') {
-    //console.log("Win32");
-    obVaultsJsonPath = join(getAppDataPath()+'/obsidian/obsidian.json');
-    //console.log(getAppDataPath());
-    //obVaultsJsonPath = '%appdata%/obsidian/obsidian.json'
-  } else if (osPlatform === 'darwin') {
-    //console.log("Mac");
-    obVaultsJsonPath = join(os.homedir()+'/Library/Application Support/obsidian/obsidian.json');
-  } else {
-    //console.log("linux");
-    obVaultsJsonPath = join(os.homedir()+'/.config/obsidian/obsidian.json');
-  }
-//console.log(os.homedir());
+  // Activate - Get OS, Possible return values are 'aix', 'darwin', 'freebsd','linux', 'openbsd', 'sunos', and 'win32' 
+  // Remove OS-specific obsidian.json path logic
+  // ...
 
-
-  // Activate - Register Extension Commands 
+  // Activate - Register Extension Commands 
   vscode.commands.registerCommand('obsidian-md-vsc.connect-with-vault', connectWithObsidian);
   context.subscriptions.push(vscode.commands.registerCommand('obsidian-md-vsc.set-defaults-global', () => {
       useGlobalSettings = true;
@@ -99,22 +86,22 @@ async function activate(context) {
       setDefaultVaultNote();
       })
     )
-  // Activate - Push Subscriptions 
+  // Activate - Push Subscriptions 
   context.subscriptions.push(connectWithObsidian);
 
-  // Activate - Ensures the Statusbar Item Always up-to-date with Activity in Editor 
+  // Activate - Ensures the Statusbar Item Always up-to-date with Activity in Editor 
   context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(updateStatusBarItem));
 
-  // Activate - Update VSCode Backlinks When File is Saved 
+  // Activate - Update VSCode Backlinks When File is Saved 
   context.subscriptions.push(vscode.workspace.onDidSaveTextDocument((document) => updateBacklinksOnSave(document)));
 
-  // Activate - Update VSCode Backlinks When File is Deleted 
+  // Activate - Update VSCode Backlinks When File is Deleted 
   context.subscriptions.push(vscode.workspace.onDidDeleteFiles((files) => updateBacklinksOnDelete(files)));
 
-  // Activate - Update VSCode Backlinks When File is Renamed 
+  // Activate - Update VSCode Backlinks When File is Renamed 
   context.subscriptions.push(vscode.workspace.onDidRenameFiles((newUriOldUriArray) => updateBacklinksOnRename(newUriOldUriArray)));
 
-  // Activate - Create Statusbar Button 
+  // Activate - Create Statusbar Button 
   createStatusBarItem();
   showStatusBarItem();
 };
@@ -127,7 +114,7 @@ async function activate(context) {
 //  ╰──────────────────────────────────────────────────────────────────────────────╯
 function updateOldDataFile() {
 
-  // updateOldDataFile - Create Extensions Global Storage Folder if it Does Not Exist 
+  // updateOldDataFile - Create Extensions Global Storage Folder if it Does Not Exist 
   globalStoragePath = myContext.globalStoragePath;
   globalStorageFilenamePath = path.join(globalStoragePath, globalStorageFilename);
   if (!fs.existsSync(globalStoragePath)) {
@@ -135,7 +122,7 @@ function updateOldDataFile() {
     return; // No need to continue if backlinks data does not exist
   };
 
-  // updateOldDataFile - Load Json Data File From Extensions Global Storage Folder if it Exists 
+  // updateOldDataFile - Load Json Data File From Extensions Global Storage Folder if it Exists 
   let fileJsonObject = [];
   let newFileJsonObject = [];
   if (fs.existsSync(globalStorageFilenamePath)) {
@@ -150,7 +137,7 @@ function updateOldDataFile() {
     return;
   };
 
-  // updateOldDataFile - Create a Backup of the Backlinks Data File 
+  // updateOldDataFile - Create a Backup of the Backlinks Data File 
   let backupFile = path.join(globalStoragePath, globalStorageFilename + ".BKP");
   if (!fs.existsSync(backupFile)) {
     fs.writeFileSync(backupFile, JSON.stringify(fileJsonObject));
@@ -159,7 +146,7 @@ function updateOldDataFile() {
     return;
   }
   
-  // updateOldDataFile - Process Data File Contains Backlinks 
+  // updateOldDataFile - Process Data File Contains Backlinks 
   for (let i = 0; i < fileJsonObject.length; i ++) {
     let id = fileJsonObject[i].id;
     let type = fileJsonObject[i].type;
@@ -184,15 +171,15 @@ function updateOldDataFile() {
         "backlinkText": newBacklinkText
       };
 
-      // updateOldDataFile - Push the Updated Json Data File Item and Update this VSCode File 
+      // updateOldDataFile - Push the Updated Json Data File Item and Update this VSCode File 
       newFileJsonObject.push(newDataItem);
 
-      // updateOldDataFile - Write this Backlink to the Updated VSCode File 
+      // updateOldDataFile - Write this Backlink to the Updated VSCode File 
       fs.writeFileSync(vscodePath, backlinkTextSearch);
     };
   };
 
-  // updateOldDataFile - Write the Updated Json Data File to Extensions Global Storage Folder 
+  // updateOldDataFile - Write the Updated Json Data File to Extensions Global Storage Folder 
   fs.writeFileSync(globalStorageFilenamePath, JSON.stringify(newFileJsonObject));
   vscode.window.showInformationMessage('Successfully Updated Backlinks Data File!', 'OK');
 
@@ -206,14 +193,14 @@ function updateOldDataFile() {
 //  ╰──────────────────────────────────────────────────────────────────────────────╯
 function addBacklinkDataFile(id, type, vscodePath, obsidianPath, lineNumber, backlinkText) {
 
-  // addBacklinkDataFile - Create Extensions Global Storage Folder if it Does Not Exist 
+  // addBacklinkDataFile - Create Extensions Global Storage Folder if it Does Not Exist 
   globalStoragePath = myContext.globalStoragePath;
   globalStorageFilenamePath = path.join(globalStoragePath, globalStorageFilename);
   if (!fs.existsSync(globalStoragePath)) {
     fs.mkdirSync(globalStoragePath, { recursive: true });
   };
 
-  // addBacklinkDataFile - Create New Json Data Object 
+  // addBacklinkDataFile - Create New Json Data Object 
   let newBacklink = {
     id: id,
     type: type,
@@ -223,17 +210,17 @@ function addBacklinkDataFile(id, type, vscodePath, obsidianPath, lineNumber, bac
     backlinkText: backlinkText
   };
 
-  // addBacklinkDataFile - Load Json Data File From Extensions Global Storage Folder if it Exists 
+  // addBacklinkDataFile - Load Json Data File From Extensions Global Storage Folder if it Exists 
   let fileJsonObject = [];
   if (fs.existsSync(globalStorageFilenamePath)) {
     let file = fs.readFileSync(globalStorageFilenamePath,"utf-8");
     fileJsonObject = JSON.parse(file);
   };
 
-  // addBacklinkDataFile - Add Json Data to File Buffer 
+  // addBacklinkDataFile - Add Json Data to File Buffer 
   fileJsonObject.push(newBacklink);
   
-  // addBacklinkDataFile - Write the Json Data File to Extensions Global Storage Folder 
+  // addBacklinkDataFile - Write the Json Data File to Extensions Global Storage Folder 
   fs.writeFileSync(globalStorageFilenamePath, JSON.stringify(fileJsonObject));
 
 };
@@ -246,7 +233,7 @@ function addBacklinkDataFile(id, type, vscodePath, obsidianPath, lineNumber, bac
 //  ╰──────────────────────────────────────────────────────────────────────────────╯
 function removeBacklinkDataFile(id) {
 
-  // removeBacklinkDataFile - Create Extensions Global Storage Folder if it Does Not Exist 
+  // removeBacklinkDataFile - Create Extensions Global Storage Folder if it Does Not Exist 
   globalStoragePath = myContext.globalStoragePath;
   globalStorageFilenamePath = path.join(globalStoragePath, globalStorageFilename);
   if (!fs.existsSync(globalStoragePath)) {
@@ -254,7 +241,7 @@ function removeBacklinkDataFile(id) {
     return;   // Just return if the file does not exist
   };
 
-  // removeBacklinkDataFile - Load Json Data File From Extensions Global Storage Folder if it Exists 
+  // removeBacklinkDataFile - Load Json Data File From Extensions Global Storage Folder if it Exists 
   let fileJsonObject = [];
   if (!fs.existsSync(globalStorageFilenamePath)) {
     return;   // Just return if the file does not exist
@@ -262,7 +249,7 @@ function removeBacklinkDataFile(id) {
   let file = fs.readFileSync(globalStorageFilenamePath,"utf-8");
   fileJsonObject = JSON.parse(file);
 
-  // removeBacklinkDataFile - Remove the Requested Backlink Object by its ID 
+  // removeBacklinkDataFile - Remove the Requested Backlink Object by its ID 
   let updatedJsonObject = [];
   for (let i = 0; i  < fileJsonObject.length; i ++) {
     if (fileJsonObject[i].id != id) {
@@ -270,7 +257,7 @@ function removeBacklinkDataFile(id) {
     };
   };
 
-  // removeBacklinkDataFile - Write the Json Data File to Extensions Global Storage Folder 
+  // removeBacklinkDataFile - Write the Json Data File to Extensions Global Storage Folder 
   fs.writeFileSync(globalStorageFilenamePath, JSON.stringify(updatedJsonObject));
 
 };
@@ -283,7 +270,7 @@ function removeBacklinkDataFile(id) {
 //  ╰──────────────────────────────────────────────────────────────────────────────╯
 async function commandVerifyDeleteBacklinks(scope) {
 
-  // commandVerifyDeleteBacklinks - Create Extensions Global Storage Folder if it Does Not Exist 
+  // commandVerifyDeleteBacklinks - Create Extensions Global Storage Folder if it Does Not Exist 
   globalStoragePath = myContext.globalStoragePath;
   globalStorageFilenamePath = path.join(globalStoragePath, globalStorageFilename);
   if (!fs.existsSync(globalStoragePath)) {
@@ -292,7 +279,7 @@ async function commandVerifyDeleteBacklinks(scope) {
     return; // No need to continue if backlinks data does not exist
   };
 
-  // commandVerifyDeleteBacklinks - Load Json Data File From Extensions Global Storage Folder if it Exists 
+  // commandVerifyDeleteBacklinks - Load Json Data File From Extensions Global Storage Folder if it Exists 
   let fileJsonObject = [];
   if (fs.existsSync(globalStorageFilenamePath)) {
     let file = fs.readFileSync(globalStorageFilenamePath,"utf-8");
@@ -308,10 +295,10 @@ async function commandVerifyDeleteBacklinks(scope) {
     return;
   };
 
-  // commandVerifyDeleteBacklinks - Get Projects Path 
+  // commandVerifyDeleteBacklinks - Get Projects Path 
   let projectPath = vscode.workspace.workspaceFolders[0].uri.fsPath;
 
-  // commandVerifyDeleteBacklinks - Check if Data File Contains Deleted Files Backlinks 
+  // commandVerifyDeleteBacklinks - Check if Data File Contains Deleted Files Backlinks 
   let projectBacklinksList = [];
   let allBacklinksList = [];
   let newBacklinkItemList = [];
@@ -379,7 +366,7 @@ async function commandVerifyDeleteBacklinks(scope) {
     };
   };
 
-  // commandVerifyDeleteBacklinks - Prompt User With a List of Backlinks to Delete 
+  // commandVerifyDeleteBacklinks - Prompt User With a List of Backlinks to Delete 
   let options = {
     placeHolder: "Select any backlinks you wish to delete",
     title: `---=== Vault: ${defaultVault}  -  Default Note: ${defaultNote} - Daily Note: ${dailyNoteFilename} ===---`,
@@ -396,12 +383,12 @@ async function commandVerifyDeleteBacklinks(scope) {
       pick = await vscode.window.showQuickPick(allBacklinksList, options);
   };
 
-  // commandVerifyDeleteBacklinks - User Canceled 
+  // commandVerifyDeleteBacklinks - User Canceled 
   if (!pick || pick.length == 0) {
     return;
   };
 
-  // commandVerifyDeleteBacklinks - Process Selected Picks 
+  // commandVerifyDeleteBacklinks - Process Selected Picks 
   for (let idx = 0; idx < pick.length; idx ++) {
     let id = pick[idx].description
     let backlinkText = fileJsonObject[idx].backlinkText;
@@ -448,7 +435,7 @@ async function commandVerifyDeleteBacklinks(scope) {
 //  ╰──────────────────────────────────────────────────────────────────────────────╯
 function updateBacklinksOnSave(document) {
 
-  // updateBacklinksOnSave - Create Extensions Global Storage Folder if it Does Not Exist 
+  // updateBacklinksOnSave - Create Extensions Global Storage Folder if it Does Not Exist 
   globalStoragePath = myContext.globalStoragePath;
   globalStorageFilenamePath = path.join(globalStoragePath, globalStorageFilename);
   if (!fs.existsSync(globalStoragePath)) {
@@ -456,7 +443,7 @@ function updateBacklinksOnSave(document) {
     return; // No need to continue if backlinks data does not exist
   };
 
-  // updateBacklinksOnSave - Load Json Data File From Extensions Global Storage Folder if it Exists 
+  // updateBacklinksOnSave - Load Json Data File From Extensions Global Storage Folder if it Exists 
   let fileJsonObject = [];
   if (fs.existsSync(globalStorageFilenamePath)) {
     let file = fs.readFileSync(globalStorageFilenamePath,"utf-8");
@@ -470,7 +457,7 @@ function updateBacklinksOnSave(document) {
     return;
   };
 
-  // updateBacklinksOnSave - Check if Data File Contains Saved Files Backlinks 
+  // updateBacklinksOnSave - Check if Data File Contains Saved Files Backlinks 
   for (let i = 0; i < fileJsonObject.length; i ++) {
     if (document.fileName == fileJsonObject[i].vscodePath) {
       let id = fileJsonObject[i].id;
@@ -491,14 +478,14 @@ function updateBacklinksOnSave(document) {
           let oldLineNumber = fileJsonObject[i].lineNumber;
           let newBacklinkText = test[3];
           if (newLineNumber != oldLineNumber || newBacklinkText != oldBacklinkText) {
-            // updateBacklinksOnSave - Save the updated data file 
+            // updateBacklinksOnSave - Save the updated data file 
             fileJsonObject[i].lineNumber = newLineNumber;
             fileJsonObject[i].backlinkText = newBacklinkText;
             fs.writeFileSync(globalStorageFilenamePath, JSON.stringify(fileJsonObject));
-            // updateBacklinksOnSave - Load and update the obsidian file then save it 
+            // updateBacklinksOnSave - Load and update the obsidian file then save it 
             newLineNumber++;
             let obsidianFilename = fileJsonObject[i].obsidianPath;
-            // updateBacklinksOnSave - Update Obsidian File Only if it Exists 
+            // updateBacklinksOnSave - Update Obsidian File Only if it Exists 
             if (fs.existsSync(obsidianFilename)) {
               let file = fs.readFileSync(obsidianFilename,"utf-8");
               let match;
@@ -524,7 +511,7 @@ function updateBacklinksOnSave(document) {
 //  ╰──────────────────────────────────────────────────────────────────────────────╯
 function updateBacklinksOnDelete(deletedFiles) {
 
-  // updateBacklinksOnDelete - Create Extensions Global Storage Folder if it Does Not Exist 
+  // updateBacklinksOnDelete - Create Extensions Global Storage Folder if it Does Not Exist 
   globalStoragePath = myContext.globalStoragePath;
   globalStorageFilenamePath = path.join(globalStoragePath, globalStorageFilename);
   if (!fs.existsSync(globalStoragePath)) {
@@ -532,7 +519,7 @@ function updateBacklinksOnDelete(deletedFiles) {
     return; // No need to continue if backlinks data does not exist
   };
 
-  // updateBacklinksOnDelete - Load Json Data File From Extensions Global Storage Folder if it Exists 
+  // updateBacklinksOnDelete - Load Json Data File From Extensions Global Storage Folder if it Exists 
   let fileJsonObject = [];
   if (fs.existsSync(globalStorageFilenamePath)) {
     let file = fs.readFileSync(globalStorageFilenamePath,"utf-8");
@@ -546,13 +533,13 @@ function updateBacklinksOnDelete(deletedFiles) {
     return;
   };
 
-  // updateBacklinksOnDelete - Get All Deleted Files (Full Path) 
+  // updateBacklinksOnDelete - Get All Deleted Files (Full Path) 
   let deletedFilesList = [];
   for (let i = 0; i < deletedFiles.files.length; i++) {
     deletedFilesList.push(deletedFiles.files[i].fsPath);
   };
 
-  // updateBacklinksOnDelete - Check if Data File Contains Deleted Files Backlinks 
+  // updateBacklinksOnDelete - Check if Data File Contains Deleted Files Backlinks 
   for (let i = 0; i < fileJsonObject.length; i ++) {
     if (deletedFilesList.includes(fileJsonObject[i].vscodePath)) {
       let id = fileJsonObject[i].id;
@@ -561,7 +548,7 @@ function updateBacklinksOnDelete(deletedFiles) {
       let type = fileJsonObject[i].type;
       let match;
       let obsidianFilename = fileJsonObject[i].obsidianPath;
-      // updateBacklinksOnDelete - Update Obsidian File Only if it Exists 
+      // updateBacklinksOnDelete - Update Obsidian File Only if it Exists 
       if (fs.existsSync(obsidianFilename)) {
         let file = fs.readFileSync(obsidianFilename,"utf-8");
         if (type == 'link') {
@@ -584,7 +571,7 @@ function updateBacklinksOnDelete(deletedFiles) {
 //  ╰──────────────────────────────────────────────────────────────────────────────╯
 function updateBacklinksOnRename(newUriOldUriArray) {
 
-  // updateBacklinksOnRename - Create Extensions Global Storage Folder if it Does Not Exist 
+  // updateBacklinksOnRename - Create Extensions Global Storage Folder if it Does Not Exist 
   globalStoragePath = myContext.globalStoragePath;
   globalStorageFilenamePath = path.join(globalStoragePath, globalStorageFilename);
   if (!fs.existsSync(globalStoragePath)) {
@@ -592,7 +579,7 @@ function updateBacklinksOnRename(newUriOldUriArray) {
     return; // No need to continue if backlinks data does not exist
   };
 
-  // updateBacklinksOnRename - Load Json Data File From Extensions Global Storage Folder if it Exists 
+  // updateBacklinksOnRename - Load Json Data File From Extensions Global Storage Folder if it Exists 
   let fileJsonObject = [];
   if (fs.existsSync(globalStorageFilenamePath)) {
     let file = fs.readFileSync(globalStorageFilenamePath,"utf-8");
@@ -606,7 +593,7 @@ function updateBacklinksOnRename(newUriOldUriArray) {
     return;
   };
 
-  // updateBacklinksOnRename - Get All Renamed Files Old and New Uri's (Full Path) 
+  // updateBacklinksOnRename - Get All Renamed Files Old and New Uri's (Full Path) 
   let renamedNewUriListfsPath = [];
   let renamedNewUriListPath = [];
   let renamedOldUriListfsPath = [];
@@ -616,7 +603,7 @@ function updateBacklinksOnRename(newUriOldUriArray) {
     renamedOldUriListfsPath.push(newUriOldUriArray.files[i].oldUri.fsPath);
   };
 
-  // updateBacklinksOnRename - Check if Data File Contains Renamed Files (Full Path) 
+  // updateBacklinksOnRename - Check if Data File Contains Renamed Files (Full Path) 
   for (let i = 0; i < fileJsonObject.length; i ++) {
     if (renamedOldUriListfsPath.includes(fileJsonObject[i].vscodePath)) {
       // Rename Data files VSCode path
@@ -632,7 +619,7 @@ function updateBacklinksOnRename(newUriOldUriArray) {
       let type = fileJsonObject[i].type;
       let match;
       let obsidianFilename = fileJsonObject[i].obsidianPath;
-      // updateBacklinksOnRename - Update Obsidian File Only if it Exists 
+      // updateBacklinksOnRename - Update Obsidian File Only if it Exists 
       if (fs.existsSync(obsidianFilename)) {
         let file = fs.readFileSync(obsidianFilename,"utf-8");
         if (type == 'link') {
@@ -646,7 +633,7 @@ function updateBacklinksOnRename(newUriOldUriArray) {
     };
   };
 
-  // updateBacklinksOnRename - Write the Json Data File to Extensions Global Storage Folder 
+  // updateBacklinksOnRename - Write the Json Data File to Extensions Global Storage Folder 
   fs.writeFileSync(globalStorageFilenamePath, JSON.stringify(fileJsonObject));
 
 };
@@ -703,84 +690,62 @@ function updateStatusBarItem() {
 //  ╰──────────────────────────────────────────────────────────────────────────────╯
 async function setDefaultVaultNote() {
   
-  let vaultNames = [];                                        // Vault Names Array
+  //  setDefaulVaultNote - Get Default Obsidian Vault Folder
+  const options = OpenDialogOptions = {
+    title: `Select your default Obsidian vault folder`,
+    canSelectMany: false,
+    canSelectFolders: true,
+    canSelectFiles: false,
+    openLabel: "Select Default Vault"
+  };
 
-  // setDefaulVaultNote - Get Obsidian.json Data 
-  let vaultDataFile = await readFile(obVaultsJsonPath);       // Read file into memory
-  let vaultDataObj = JSON.parse(vaultDataFile.toString());    // Parse json
+  let vaultUri = await vscode.window.showOpenDialog(options);
+  if (!vaultUri || !vaultUri[0]) {
+      return; // User canceled
+  }
 
-  // setDefaulVaultNote - Cacheing Map 
-  var objMap = new Map(Object.entries(vaultDataObj.vaults));
+  let vaultPath = vaultUri[0].fsPath;
+  let vaultName = path.basename(vaultPath);
 
-  // setDefaulVaultNote - Get Vault Selection from User 
-  let quickpick = vscode.window.createQuickPick();
-  quickpick.title = "--== Select your default vault ==--";
-  quickpick.placeholder = "Choose from these available vaults";
-  quickpick.matchOnDescription = true;
-  objMap.forEach((item, key) => {
-    let vaultPath = item.path;
-    let vaultName = vaultPath.split(path.sep).pop();
-    if (item.open === true) {
-      vaultNames.push({label: vaultName, path: vaultPath, description: "Currently open or last opened vault"});
-    } else {
-      vaultNames.push({label: vaultName, path: vaultPath});
-    }
-  });
-  quickpick.items = vaultNames;
+  //  setDefaulVaultNote - Get Default Obsidian Note From Selected Vault Folder
+  const noteOptions = OpenDialogOptions = {
+    title: `Select default note from Obsidian vault - ${vaultName}`,
+    defaultUri: vaultUri[0],
+    canSelectMany: false,
+    canSelectFolders: false,
+    canSelectFiles: true,
+    filters: { Markdown: ['md']},
+    openLabel: "Select Default Note"
+  };
 
-  // setDefaulVaultNote - Get Vault Selection from User 
-  quickpick.onDidAccept(async () => {
-    // setDefaulVaultNote - Get Default Obsidian Note From Selected Vault Folder 
-    const dirVault = vscode.Uri.file(path.join(quickpick.selectedItems[0].path))
-    let vaultPath = dirVault.path;
-    let fsPathVault = dirVault.fsPath;
-    const options = OpenDialogOptions = {
-      title: `Select default note from Obsidian vault - ${quickpick.selectedItems[0].path}`,
-      defaultUri: dirVault,
-      canSelectMany: false,
-      canSelectFolders: false,
-      canSelectFiles: true,
-      filters: { Markdown: ['md']},
-      openLabel: "Select Default Note"
-    };
-    let noteUri = await vscode.window.showOpenDialog(options);
-    if (noteUri == undefined) {
-      quickpick.hide();
-      return;
-    };
-    let notePath = noteUri[0].path;
-    if (!notePath.includes(vaultPath)) {
-      let message = `Default note selected is outside of the vault '${quickpick.selectedItems[0].label}' Please try again.`;
-      vscode.window.showErrorMessage(message, 'OK');
-      return;
-    };
-    // setDefaulVaultNote - Save the Selected Default Vault & Note to Settings 
-    if (noteUri && noteUri[0]) {
-      let noteNameObj = noteUri[0].fsPath.split(fsPathVault);
-      let noteNameFull = noteNameObj[1];
-      let noteName = noteNameFull.replace(/^\/+|\\+/, "");
-      noteName = noteName.substring(0, noteName.lastIndexOf('.'));
-      let settings = vscode.workspace.getConfiguration("obsidian-md-vsc");
-      if (useGlobalSettings) {
-        settings.update("defaultVault",quickpick.selectedItems[0].label,1);
-        settings.update("defaultVaultPath",quickpick.selectedItems[0].path,1);
-        settings.update("defaultNote",noteName,1);
-      } else {
-        settings.update("defaultVault",quickpick.selectedItems[0].label,0);
-        settings.update("defaultVaultPath",quickpick.selectedItems[0].path,0);
-        settings.update("defaultNote",noteName,0);
-      }
-      defaultVault = quickpick.selectedItems[0].label;
-      defaultVaultPath = quickpick.selectedItems[0].path;
-      defaultNote = noteName;
-      updateStatusBarItem();
-    }
-  quickpick.hide();
-  }),
-  
-  // setDefaulVaultNote - Show the Quickpick 
-  quickpick.show();
+  let noteUri = await vscode.window.showOpenDialog(noteOptions);
+  if (!noteUri || !noteUri[0]) {
+      return; // User canceled
+  }
 
+  let notePath = noteUri[0].fsPath;
+  if (!notePath.startsWith(vaultPath)) {
+    let message = `Default note selected is outside of the vault '${vaultName}' Please try again.`;
+    vscode.window.showErrorMessage(message, 'OK');
+    return;
+  };
+
+  //  setDefaulVaultNote - Save the Selected Default Vault & Note to Settings
+  let noteName = path.basename(notePath, '.md');
+  let settings = vscode.workspace.getConfiguration("obsidian-md-vsc");
+  if (useGlobalSettings) {
+    settings.update("defaultVault",vaultName,1);
+    settings.update("defaultVaultPath",vaultPath,1);
+    settings.update("defaultNote",noteName,1);
+  } else {
+    settings.update("defaultVault",vaultName,0);
+    settings.update("defaultVaultPath",vaultPath,0);
+    settings.update("defaultNote",noteName,0);
+  }
+  defaultVault = vaultName;
+  defaultVaultPath = vaultPath;
+  defaultNote = noteName;
+  updateStatusBarItem();
 };
 
 //  ╭──────────────────────────────────────────────────────────────────────────────╮
@@ -790,15 +755,15 @@ async function setDefaultVaultNote() {
 //  ╰──────────────────────────────────────────────────────────────────────────────╯
 async function connectWithObsidian() {
 
-  // connectWithObsidian - Set Default Vault & Note if Required 
+  //  connectWithObsidian - Set Default Vault & Note if Required
   if (defaultVault === "" || defaultVault === undefined) {
-    // connectWithObsidian - true - Save to Global Settings, false - Save to Workspace Settings 
+    //  connectWithObsidian - true - Save to Global Settings, false - Save to Workspace Settings
     useGlobalSettings = true;
     setDefaultVaultNote();
     return;
   }
 
-  // connectWithObsidian - Initialize Variables 
+  //  connectWithObsidian - Initialize Variables
   headers = [];   // Need to Clear any Previous Data
   bookmarked = [];
   bookmarkedTitles = [];
@@ -843,7 +808,7 @@ async function connectWithObsidian() {
     currentDocumentName = document.fileName.split(/[/\\]+/).pop();
     currentDocument = document.getText();
   }
-  // connectWithObsidian - Assign Date/Time Variables 
+  //  connectWithObsidian - Assign Date/Time Variables
   // See https://momentjs.com/docs/#/displaying/format/
   //
   // Year
@@ -910,7 +875,7 @@ async function connectWithObsidian() {
   // var mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
   // var yyyy = today.getFullYear();
 
-  // connectWithObsidian - Get Headers From Default Note 
+  //  connectWithObsidian - Get Headers From Default Note
   fs.readFile(pathToNote, 'utf-8', (err, data) => {
     if (err) {
       console.log('Warning: Unable to Load Default Note Headers (Has default note been set in settings.json?)');
@@ -922,7 +887,7 @@ async function connectWithObsidian() {
     }
   });
 
-  // connectWithObsidian - Get Bookmarked Notes From Default Vault 
+  //  connectWithObsidian - Get Bookmarked Notes From Default Vault
   fs.readFile(pathToBookmarks, 'utf-8', (err, data) => {
     if (err) {
       console.log('Warning: Unable to Load Bookmarked Notes List (Have any notes been Bookmarked yet?)');
@@ -938,7 +903,7 @@ async function connectWithObsidian() {
     };
   });
 
-  // connectWithObsidian - Get Workspaces From Default Vault 
+  //  connectWithObsidian - Get Workspaces From Default Vault
   fs.readFile(pathToWorkspaces, 'utf-8', (err, data) => {
     if (err) {
       console.log('Warning: Unable to Load Workspaces List (Have any workspaces been created yet?)');
@@ -949,7 +914,7 @@ async function connectWithObsidian() {
     workspaces = workspaces[0];
   });
 
-  // connectWithObsidian - Get Plugins From Default Vault 
+  //  connectWithObsidian - Get Plugins From Default Vault
   fs.readFile(pathToPlugins, 'utf-8', (err, data) => {
     if (err) {
       console.log('Warning: Unable to Load Plugins List (Have any plugins been installed yet?)');
@@ -958,7 +923,7 @@ async function connectWithObsidian() {
     plugins = data;
   });
 
-  // connectWithObsidian - Get Headers From Daily Note 
+  //  connectWithObsidian - Get Headers From Daily Note
   fs.readFile(pathToDailyJson, 'utf-8', (err, data) => {
     if (err) {
       console.log("Warning: Unable to Load 'daily-notes.json' (Have daily notes core plugin been enabled yet?)");
@@ -1040,7 +1005,7 @@ async function connectWithObsidian() {
     })
   });
 
-  // connectWithObsidian - Prompt User with Root Choices 
+  //  connectWithObsidian - Prompt User with Root Choices
   let options = {
     placeHolder: "How would you like to connect to Obsidian?",
     title: `---=== Vault: ${defaultVault}  -  Default Note: ${defaultNote} ===---`
@@ -1048,7 +1013,7 @@ async function connectWithObsidian() {
   let rootLabels = [{label: 'Open in Obsidian...'},{label: 'Create New...'},{label: 'Daily Note...'},{label: `Send to default note: '${defaultNote}'...`},{label: `Open default note: '${defaultNote}' in VSCode`},{label: `Open vault: '${defaultVault}' in VSCode`},{label: `Verify/Delete Backlinks (Project)`},{label: `Verify/Delete Backlinks (Global)`}];
   const pick = await vscode.window.showQuickPick(rootLabels, options);
 
-  // connectWithObsidian - User Canceled 
+  //  connectWithObsidian - User Canceled
   if (!pick) {
     return;
   }
@@ -1065,21 +1030,21 @@ async function connectWithObsidian() {
     commandSendto();
     return;
   } else if (pick.label === `Open default note: '${defaultNote}' in VSCode`) {
-    // connectWithObsidian - Open note: ${defaultNote} in VSCode 
+    //  connectWithObsidian - Open note: ${defaultNote} in VSCode
     obURI = `vscode://file/${pathToNote}`;
     vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
     return;
   } else if (pick.label === `Open default note: '${defaultNote}' in VSCode`) {
-    // connectWithObsidian - Open vault: '${defaultVault}' in VSCode 
+    //  connectWithObsidian - Open vault: '${defaultVault}' in VSCode
     obURI = `vscode://file/${defaultVaultPath}`;
     vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
     return;
   } else if (pick.label === `Verify/Delete Backlinks (Project)`) {
-    // connectWithObsidian - Verify/Delete Backlinks (Project) 
+    //  connectWithObsidian - Verify/Delete Backlinks (Project)
     commandVerifyDeleteBacklinks('Project');
     return;
   } else {
-    // connectWithObsidian - Verify/Delete Backlinks (Global) 
+    //  connectWithObsidian - Verify/Delete Backlinks (Global)
     commandVerifyDeleteBacklinks('Global');
     return;
   }
@@ -1096,7 +1061,7 @@ async function commandOpen() {
   let openPicks = [];
   let pick;
 
-  // commandOpen - Prompt User with Open Choices 
+  //  commandOpen - Prompt User with Open Choices
   openPicks.push({label: 'Open Obsidian'});
   openPicks.push({label: `Open default note '${defaultNote}'`});
   if (headers.length > 0) {
@@ -1115,43 +1080,43 @@ async function commandOpen() {
   };
   pick = await vscode.window.showQuickPick(openPicks, options);
 
-  // commandOpen - User Canceled 
+  //  commandOpen - User Canceled
   if (!pick) {
     return;
   }
 
-  // commandOpen - Execute Commands 
+  //  commandOpen - Execute Commands
   let command = pick.label
   let obURI;
   switch (command) {
-    // commandOpen - Open Obsidian 
+    //  commandOpen - Open Obsidian
     case 'Open Obsidian':
-      obURI = `obsidian://advanced-uri?vault=${defaultVault}`
-      vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+      obURI = `obsidian://open?vault=${encodeURIComponent(defaultVault)}`
+      vscode.env.openExternal(vscode.Uri.parse(obURI, true));
       break;
 
-    // commandOpen - Default Note 
+    //  commandOpen - Default Note
     case `Open default note '${defaultNote}'`:
-      obURI = `obsidian://advanced-uri?vault=${defaultVault}&filepath=${defaultNote}`
-      vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+      obURI = `obsidian://open?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(defaultNote)}`
+      vscode.env.openExternal(vscode.Uri.parse(obURI, true));
       break;
 
-    // commandOpen - Open to Header 
+    //  commandOpen - Open to Header
     case `Open to header in default note: '${defaultNote}'`:
       options = {
         placeHolder: "Select header to open in Obsidian",
         title: `---=== Vault: ${defaultVault}  -  Default Note: ${defaultNote} ===---`
       };
       pick = await vscode.window.showQuickPick(headers, options);
-      // commandOpen - User Canceled 
+      //  commandOpen - User Canceled
       if (!pick) {
         break;
       }
-      obURI = `obsidian://advanced-uri?vault=${defaultVault}&filepath=${defaultNote}&heading=${pick.label}`
-      vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+      obURI = `obsidian://open?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(defaultNote)}&heading=${encodeURIComponent(pick.label)}`
+      vscode.env.openExternal(vscode.Uri.parse(obURI, true));
       break;
 
-    // commandOpen - Bookmarked Note 
+    //  commandOpen - Bookmarked Note
     case `Open default vault: '${defaultVault}' bookmarked note...`:
       options = {
         placeHolder: "Select bookmarked note to open in Obsidian",
@@ -1181,27 +1146,30 @@ async function commandOpen() {
         };
       };
       pick = await vscode.window.showQuickPick(bookmarkedTitles, options);
-      // commandOpen - User Canceled 
+      //  commandOpen - User Canceled
       if (!pick) {
         break;
       };
       for (let i = 0; i < bookmarked.length; i++) {
         if (pick == bookmarkedTitles[i]) {
-          obURI = `obsidian://advanced-uri?vault=${defaultVault}&filepath=${bookmarkedValid[i].path+bookmarkedValid[i].subpath}`
-          vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+          obURI = `obsidian://open?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(bookmarkedValid[i].path)}`
+          if (bookmarkedValid[i].subpath) {
+            obURI += `&heading=${encodeURIComponent(bookmarkedValid[i].subpath)}`;
+          }
+          vscode.env.openExternal(vscode.Uri.parse(obURI, true));
           break;
         };
       };
       break;
 
-    // commandOpen - Workspace 
+    //  commandOpen - Workspace
     case 'Open workspace...':
       options = {
         placeHolder: "Select workspace to open in Obsidian",
         title: `---=== Vault: ${defaultVault}  -  Default Note: ${defaultNote} ===---`
       };
       pick = await vscode.window.showQuickPick(workspaces, options);
-      // commandOpen - User Canceled 
+      //  commandOpen - User Canceled
       if (!pick) {
         break;
       }
@@ -1225,7 +1193,7 @@ async function commandCreate() {
   let newName = "";
   let newClipName = "";
 
-  // commandCreate - Prompt User with Open Choices 
+  //  commandCreate - Prompt User with Open Choices
   openPicks.push({label: 'Create new note'});
   let activeEditor = vscode.window.activeTextEditor;
   if (activeEditor) {
@@ -1238,16 +1206,16 @@ async function commandCreate() {
   };
   pick = await vscode.window.showQuickPick(openPicks, options);
 
-  // commandCreate - User Canceled 
+  //  commandCreate - User Canceled
   if (!pick) {
     return;
   }
 
-  // commandCreate - Execute Commands 
+  //  commandCreate - Execute Commands
   let command = pick.label
   let obURI;
   switch (command) {
-    // commandCreate - Create new note 
+    //  commandCreate - Create new note
     case 'Create new note':
       options = {
         placeHolder: "Enter new note name",
@@ -1261,7 +1229,7 @@ async function commandCreate() {
       }
       break;
     
-    // commandCreate - Create new note from selected text or entire document 
+    //  commandCreate - Create new note from selected text or entire document
     case 'Create new note from from current file or selection':
       options = {
         placeHolder: "Enter new note name",
@@ -1304,7 +1272,7 @@ async function commandDaily() {
   let docPath = "";
   let vscodeUri = "";
 
-  // commandDaily - Initialize VSCode Backlinks 
+  //  commandDaily - Initialize VSCode Backlinks
   let activeEditor = vscode.window.activeTextEditor;
   if (activeEditor) {
       lineNumber = activeEditor.selection.active.line+1;
@@ -1314,7 +1282,7 @@ async function commandDaily() {
   }
 
 
-  // commandDaily - Prompt User with Daily Choices 
+  //  commandDaily - Prompt User with Daily Choices
   openPicks.push({label: `Create/Open daily note: ${dailyNoteFilename}`});
   if (headersDaily.length > 0) {
     openPicks.push({label: `Open to header in daily note: ${dailyNoteFilename}`});
@@ -1322,7 +1290,7 @@ async function commandDaily() {
     openPicks.push({label: 'Append to header...'});
   }
 
-  // commandDaily - Prompt User with Daily Note Command Choices 
+  //  commandDaily - Prompt User with Daily Note Command Choices
   dailyPrependAppendCommands.push('Insert text', );
   if (currentSelection != "") {
     dailyPrependAppendCommands.push('Insert selected text');
@@ -1348,36 +1316,36 @@ async function commandDaily() {
   };
   pick = await vscode.window.showQuickPick(openPicks, options);
 
-  // commandDaily - User Canceled 
+  //  commandDaily - User Canceled
   if (!pick) {
     return;
   }
 
-  // commandDaily - Execute Commands 
+  //  commandDaily - Execute Commands
   let command = pick.label
   let obURI;
   switch (command) {
-    // commandDaily - Create new daily note 
+    //  commandDaily - Create new daily note
     case `Create/Open daily note: ${dailyNoteFilename}`:
-      obURI = `obsidian://advanced-uri?vault=${defaultVault}&daily=true`
-      vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+      obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(dailyNoteFilename)}&append`
+      vscode.env.openExternal(vscode.Uri.parse(obURI, true));
       break;
-    // commandDaily - Open to header in daily note 
+    //  commandDaily - Open to header in daily note
     case `Open to header in daily note: ${dailyNoteFilename}`:
       options = {
         placeHolder: "Select daily note header to open in Obsidian",
         title: `---=== Vault: ${defaultVault}  -  Daily Note: ${dailyNoteFilename} ===---`
       };
       pick = await vscode.window.showQuickPick(headersDaily, options);
-      // commandDaily - User Canceled 
+      //  commandDaily - User Canceled
       if (!pick) {
         break;
       }
-      obURI = `obsidian://advanced-uri?vault=${defaultVault}&daily=true&heading=${pick.label}`
-      vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+      obURI = `obsidian://open?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(dailyNoteFilename)}&heading=${encodeURIComponent(pick.label)}`
+      vscode.env.openExternal(vscode.Uri.parse(obURI, true));
       break;
 
-    // commandDaily - Prepend & Append to daily note header 
+    //  commandDaily - Prepend & Append to daily note header
     case 'Prepend to header...':
     case 'Append to header...':
       options = {
@@ -1385,7 +1353,7 @@ async function commandDaily() {
         title: `---=== Vault: ${defaultVault}  -  Daily Note: ${dailyNoteFilename} ===---`
       };
       let headerPick = await vscode.window.showQuickPick(headersDaily, options);
-      // commandDaily - User Canceled 
+      //  commandDaily - User Canceled
       if (!headerPick) {
         break;
       }
@@ -1394,13 +1362,13 @@ async function commandDaily() {
         title: `---=== Vault: ${defaultVault}  -  Daily Note: ${dailyNoteFilename} ===---`
       };
       let dailyCommandPick = await vscode.window.showQuickPick(dailyPrependAppendCommands, options);
-      // commandDaily - User Canceled 
+      //  commandDaily - User Canceled
       if (!dailyCommandPick) {
         break;
       }
       let command = dailyCommandPick
       switch (command) {
-        // commandDaily - Insert text to daily note header 
+        //  commandDaily - Insert text to daily note header
         case 'Insert text':
           options = {
             placeHolder: `Enter text to insert in daily note: '${dailyNoteFilename}', under header: '${headerPick.label}'`,
@@ -1412,42 +1380,42 @@ async function commandDaily() {
             if (newText != "") {
               vscode.env.clipboard.writeText(newText);
               if (pick.label == 'Prepend to header...') {
-                obURI = `obsidian://advanced-uri?vault=${defaultVault}&daily=true&heading=${headerPick.label}&clipboard=true&mode=prepend`
-                vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+                obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(dailyNoteFilename)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(newText)}&mode=prepend`
+                vscode.env.openExternal(vscode.Uri.parse(obURI, true));
               } else {
-                obURI = `obsidian://advanced-uri?vault=${defaultVault}&daily=true&heading=${headerPick.label}&clipboard=true&mode=append`
-                vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+                obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(dailyNoteFilename)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(newText)}&mode=append`
+                vscode.env.openExternal(vscode.Uri.parse(obURI, true));
               }
             }
             break;
           }
 
-        // commandDaily - Insert Selected Text to Daily note header 
+        //  commandDaily - Insert Selected Text to Daily note header
         case 'Insert selected text':
           vscode.env.clipboard.writeText(currentSelection);
             if (pick.label == 'Prepend to header...') {
-              obURI = `obsidian://advanced-uri?vault=${defaultVault}&daily=true&heading=${headerPick.label}&clipboard=true&mode=prepend`
-              vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+              obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(dailyNoteFilename)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(currentSelection)}&mode=prepend`
+              vscode.env.openExternal(vscode.Uri.parse(obURI, true));
             } else {
-              obURI = `obsidian://advanced-uri?vault=${defaultVault}&daily=true&heading=${headerPick.label}&clipboard=true&mode=append`
-              vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+              obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(dailyNoteFilename)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(currentSelection)}&mode=append`
+              vscode.env.openExternal(vscode.Uri.parse(obURI, true));
             }
           break;
 
-      // commandDaily - Insert Selected Text Inline Code Block to Daily note header 
+      //  commandDaily - Insert Selected Text Inline Code Block to Daily note header
       case 'Insert selected text as inline code block':
         let inlineCodeBlock = '`'+currentSelection+'`'
         vscode.env.clipboard.writeText(inlineCodeBlock);
           if (pick.label == 'Prepend to header...') {
-            obURI = `obsidian://advanced-uri?vault=${defaultVault}&daily=true&heading=${headerPick.label}&clipboard=true&mode=prepend`
-            vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+            obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(dailyNoteFilename)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(inlineCodeBlock)}&mode=prepend`
+            vscode.env.openExternal(vscode.Uri.parse(obURI, true));
           } else {
-            obURI = `obsidian://advanced-uri?vault=${defaultVault}&daily=true&heading=${headerPick.label}&clipboard=true&mode=append`
-            vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+            obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(dailyNoteFilename)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(inlineCodeBlock)}&mode=append`
+            vscode.env.openExternal(vscode.Uri.parse(obURI, true));
           }
         break;
 
-      // commandDaily - Insert Selected Text Fenced Code Block to note ${defaultNote} header 
+      //  commandDaily - Insert Selected Text Fenced Code Block to note ${defaultNote} header
       case 'Insert selected text as fenced code block':
         options = {
           placeHolder: `Enter optional fenced code block language`,
@@ -1459,16 +1427,16 @@ async function commandDaily() {
           let fencedCodeBlock = '\n```'+codeLanguage+'\n'+currentSelection+'\n```'
           vscode.env.clipboard.writeText(fencedCodeBlock);
             if (pick.label == 'Prepend to header...') {
-              obURI = `obsidian://advanced-uri?vault=${defaultVault}&daily=true&heading=${headerPick.label}&clipboard=true&mode=prepend`
-              vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+              obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(dailyNoteFilename)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(fencedCodeBlock)}&mode=prepend`
+              vscode.env.openExternal(vscode.Uri.parse(obURI, true));
             } else {
-              obURI = `obsidian://advanced-uri?vault=${defaultVault}&daily=true&heading=${headerPick.label}&clipboard=true&mode=append`
-              vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+              obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(dailyNoteFilename)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(fencedCodeBlock)}&mode=append`
+              vscode.env.openExternal(vscode.Uri.parse(obURI, true));
             }
         }
         break;
 
-        // commandDaily - Insert Comment to daily note header 
+        //  commandDaily - Insert Comment to daily note header
         case 'Insert Comment':
           options = {
             placeHolder: `Enter comment text to insert in daily note: '${dailyNoteFilename}', under header: '${headerPick.label}'`,
@@ -1481,17 +1449,17 @@ async function commandDaily() {
               newComment = '%% '+newComment+' %%'
               vscode.env.clipboard.writeText(newComment);
               if (pick.label == 'Prepend to header...') {
-                obURI = `obsidian://advanced-uri?vault=${defaultVault}&daily=true&heading=${headerPick.label}&clipboard=true&mode=prepend`
-                vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+                obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(dailyNoteFilename)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(newComment)}&mode=prepend`
+                vscode.env.openExternal(vscode.Uri.parse(obURI, true));
               } else {
-                obURI = `obsidian://advanced-uri?vault=${defaultVault}&daily=true&heading=${headerPick.label}&clipboard=true&mode=append`
-                vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+                obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(dailyNoteFilename)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(newComment)}&mode=append`
+                vscode.env.openExternal(vscode.Uri.parse(obURI, true));
               }
             }
           }
           break;
 
-        // commandDaily - Insert Unnumbered list item to daily note header 
+        //  commandDaily - Insert Unnumbered list item to daily note header
         case 'Insert Unnumbered list item':
           options = {
             placeHolder: `Enter list item text to insert in daily note: '${dailyNoteFilename}', under header: '${headerPick.label}'`,
@@ -1504,17 +1472,17 @@ async function commandDaily() {
               newUnnumList = '- '+newUnnumList
               vscode.env.clipboard.writeText(newUnnumList);
               if (pick.label == 'Prepend to header...') {
-                obURI = `obsidian://advanced-uri?vault=${defaultVault}&daily=true&heading=${headerPick.label}&clipboard=true&mode=prepend`
-                vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+                obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(dailyNoteFilename)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(newUnnumList)}&mode=prepend`
+                vscode.env.openExternal(vscode.Uri.parse(obURI, true));
               } else {
-                obURI = `obsidian://advanced-uri?vault=${defaultVault}&daily=true&heading=${headerPick.label}&clipboard=true&mode=append`
-                vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+                obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(dailyNoteFilename)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(newUnnumList)}&mode=append`
+                vscode.env.openExternal(vscode.Uri.parse(obURI, true));
               }
             }
           }
           break;
         
-        // commandDaily - Insert Numbered list item to daily note header 
+        //  commandDaily - Insert Numbered list item to daily note header
         case 'Insert Numbered list item':
           options = {
             placeHolder: `Enter list item text to insert in daily note: '${dailyNoteFilename}', under header: '${headerPick.label}'`,
@@ -1527,17 +1495,17 @@ async function commandDaily() {
               newNumList = '1. '+newNumList
               vscode.env.clipboard.writeText(newNumList);
               if (pick.label == 'Prepend to header...') {
-                obURI = `obsidian://advanced-uri?vault=${defaultVault}&daily=true&heading=${headerPick.label}&clipboard=true&mode=prepend`
-                vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+                obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(dailyNoteFilename)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(newNumList)}&mode=prepend`
+                vscode.env.openExternal(vscode.Uri.parse(obURI, true));
               } else {
-                obURI = `obsidian://advanced-uri?vault=${defaultVault}&daily=true&heading=${headerPick.label}&clipboard=true&mode=append`
-                vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+                obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(dailyNoteFilename)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(newNumList)}&mode=append`
+                vscode.env.openExternal(vscode.Uri.parse(obURI, true));
               }
             }
           }
           break;
                 
-        // commandDaily - Insert Blockquote to daily note header 
+        //  commandDaily - Insert Blockquote to daily note header
         case 'Insert Blockquote':
           options = {
             placeHolder: `Enter blockquote item text to insert in daily note: '${dailyNoteFilename}', under header: '${headerPick.label}'`,
@@ -1550,24 +1518,24 @@ async function commandDaily() {
               newBlockQuote = '\n> '+newBlockQuote
               vscode.env.clipboard.writeText(newBlockQuote);
               if (pick.label == 'Prepend to header...') {
-                obURI = `obsidian://advanced-uri?vault=${defaultVault}&daily=true&heading=${headerPick.label}&clipboard=true&mode=prepend`
-                vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+                obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(dailyNoteFilename)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(newBlockQuote)}&mode=prepend`
+                vscode.env.openExternal(vscode.Uri.parse(obURI, true));
               } else {
-                obURI = `obsidian://advanced-uri?vault=${defaultVault}&daily=true&heading=${headerPick.label}&clipboard=true&mode=append`
-                vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+                obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(dailyNoteFilename)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(newBlockQuote)}&mode=append`
+                vscode.env.openExternal(vscode.Uri.parse(obURI, true));
               }
             }
           }
           break;
         
-        // commandDaily - Insert task to daily note header 
+        //  commandDaily - Insert task to daily note header
         case 'Insert task':
           options = {
             placeHolder: `Select task type to insert`,
             title: `---=== Vault: ${defaultVault}  -  Daily Note: ${dailyNoteFilename} ===---`
           };
           let taskPick = await vscode.window.showQuickPick(taskChoices, options);
-          // commandDaily - User Canceled 
+          //  commandDaily - User Canceled
           if (!taskPick) {
             break;
           }
@@ -1583,24 +1551,24 @@ async function commandDaily() {
               let taskDef = `- ${taskPick} ${taskText}`
               vscode.env.clipboard.writeText(taskDef);
               if (pick.label == 'Prepend to header...') {
-                obURI = `obsidian://advanced-uri?vault=${defaultVault}&daily=true&heading=${headerPick.label}&clipboard=true&mode=prepend`
-                vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+                obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(dailyNoteFilename)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(taskDef)}&mode=prepend`
+                vscode.env.openExternal(vscode.Uri.parse(obURI, true));
               } else {
-                obURI = `obsidian://advanced-uri?vault=${defaultVault}&daily=true&heading=${headerPick.label}&clipboard=true&mode=append`
-                vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+                obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(dailyNoteFilename)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(taskDef)}&mode=append`
+                vscode.env.openExternal(vscode.Uri.parse(obURI, true));
               }
             }
           }
           break;
 
-        // commandDaily - Insert Callout to daily note header 
+        //  commandDaily - Insert Callout to daily note header
         case 'Insert Callout':
           options = {
             placeHolder: `Select callout type to insert`,
             title: `---=== Vault: ${defaultVault}  -  Daily Note: ${dailyNoteFilename} ===---`
           };
           let calloutPick = await vscode.window.showQuickPick(calloutChoices, options);
-          // commandDaily - User Canceled 
+          //  commandDaily - User Canceled
           if (!calloutPick) {
             break;
           }
@@ -1609,7 +1577,7 @@ async function commandDaily() {
             title: `---=== Vault: ${defaultVault}  -  Daily Note: ${dailyNoteFilename} ===---`
           };
           let foldingPick = await vscode.window.showQuickPick(['None', 'Default Expanded', 'Default Collapsed'], options);
-          // commandDaily - User Canceled 
+          //  commandDaily - User Canceled
           if (!foldingPick) {
             break;
           }
@@ -1642,17 +1610,17 @@ async function commandDaily() {
               calloutDef = calloutDef+'\n'; // Ensures a blank line below callout
               vscode.env.clipboard.writeText(calloutDef);
               if (pick.label == 'Prepend to header...') {
-                obURI = `obsidian://advanced-uri?vault=${defaultVault}&daily=true&heading=${headerPick.label}&clipboard=true&mode=prepend`
-                vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+                obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(dailyNoteFilename)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(calloutDef)}&mode=prepend`
+                vscode.env.openExternal(vscode.Uri.parse(obURI, true));
               } else {
-                obURI = `obsidian://advanced-uri?vault=${defaultVault}&daily=true&heading=${headerPick.label}&clipboard=true&mode=append`
-                vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+                obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(dailyNoteFilename)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(calloutDef)}&mode=append`
+                vscode.env.openExternal(vscode.Uri.parse(obURI, true));
               }
             }
           }
           break;
           
-        // commandDaily - Insert VSCode backlink to daily note header 
+        //  commandDaily - Insert VSCode backlink to daily note header
         case 'Insert VSCode backlink':
           if (lineNumber != "") {
             options = {
@@ -1661,7 +1629,7 @@ async function commandDaily() {
             };
             let backlinkTypePick = "";
             backlinkTypePick = await vscode.window.showQuickPick(BacklinkPrefix, options);
-            // commandSendto - User Canceled 
+            //  commandSendto - User Canceled
             if (!backlinkTypePick) {
               backlinkTypePick = "";
             }
@@ -1677,11 +1645,11 @@ async function commandDaily() {
                 let linkDef = `\n[${backlinkTypePick} ${linkText} ${backlinkSeparator} File: ${currentDocumentName} ${backlinkSeparator} ID: ${unixTimestamp}](${vscodeUri})`
                 vscode.env.clipboard.writeText(linkDef);
                 if (pick.label == 'Prepend to header...') {
-                  obURI = `obsidian://advanced-uri?vault=${defaultVault}&daily=true&heading=${headerPick.label}&clipboard=true&mode=prepend`
-                  vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+                  obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(dailyNoteFilename)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(linkDef)}&mode=prepend`
+                  vscode.env.openExternal(vscode.Uri.parse(obURI, true));
                 } else {
-                  obURI = `obsidian://advanced-uri?vault=${defaultVault}&daily=true&heading=${headerPick.label}&clipboard=true&mode=append`
-                  vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+                  obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(dailyNoteFilename)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(linkDef)}&mode=append`
+                  vscode.env.openExternal(vscode.Uri.parse(obURI, true));
                 }
                 const editor = vscode.window.activeTextEditor;
                 await editor.edit(editBuilder => {
@@ -1694,7 +1662,7 @@ async function commandDaily() {
           }
           break;
           
-        // commandDaily - Insert VSCode backlink button to daily note header 
+        //  commandDaily - Insert VSCode backlink button to daily note header
         case 'Insert VSCode backlink button':
           if (lineNumber != "") {
             options = {
@@ -1703,7 +1671,7 @@ async function commandDaily() {
             };
             let backlinkTypePick = "";
             backlinkTypePick = await vscode.window.showQuickPick(BacklinkPrefix, options);
-            // commandSendto - User Canceled 
+            //  commandSendto - User Canceled
             if (!backlinkTypePick) {
               backlinkTypePick = "";
             }
@@ -1724,11 +1692,11 @@ async function commandDaily() {
                 };
                 vscode.env.clipboard.writeText(buttonDef);
                 if (pick.label == 'Prepend to header...') {
-                  obURI = `obsidian://advanced-uri?vault=${defaultVault}&daily=true&heading=${headerPick.label}&clipboard=true&mode=prepend`
-                  vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+                  obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(dailyNoteFilename)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(buttonDef)}&mode=prepend`
+                  vscode.env.openExternal(vscode.Uri.parse(obURI, true));
                 } else {
-                  obURI = `obsidian://advanced-uri?vault=${defaultVault}&daily=true&heading=${headerPick.label}&clipboard=true&mode=append`
-                  vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+                  obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(dailyNoteFilename)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(buttonDef)}&mode=append`
+                  vscode.env.openExternal(vscode.Uri.parse(obURI, true));
                 };
                 const editor = vscode.window.activeTextEditor;
                 await editor.edit(editBuilder => {
@@ -1765,7 +1733,7 @@ async function commandSendto() {
   let docPath = "";
   let vscodeUri = "";
 
-  // commandSendto - Initialize VSCode Backlinks 
+  //  commandSendto - Initialize VSCode Backlinks
   let activeEditor = vscode.window.activeTextEditor;
   if (activeEditor) {
       lineNumber = activeEditor.selection.active.line+1;
@@ -1774,14 +1742,14 @@ async function commandSendto() {
       vscodeUri = `vscode://file${docPath}:${lineNumber}`
   }
 
-  // commandSendto - Prompt User with Default Note Choices 
+  //  commandSendto - Prompt User with Default Note Choices
   openPicks.push({label: `Append new header to default note: '${defaultNote}'`});
   if (headers.length > 0) {
     openPicks.push({label: 'Prepend to header...'});
     openPicks.push({label: 'Append to header...'});
   }
 
-  // commandSendto - Prompt User with Default Note Command Choices 
+  //  commandSendto - Prompt User with Default Note Command Choices
   defaultPrependAppendCommands.push('Insert text');
   if (currentSelection != "") {
     defaultPrependAppendCommands.push('Insert selected text');
@@ -1806,23 +1774,23 @@ async function commandSendto() {
     title: `---=== Vault: ${defaultVault}  -  Default Note: ${defaultNote} ===---`
   };
   pick = await vscode.window.showQuickPick(openPicks, options);
-  // commandSendto - User Canceled 
+  //  commandSendto - User Canceled
   if (!pick) {
     return;
   }
 
-  // commandSendto - Execute Commands 
+  //  commandSendto - Execute Commands
   let command = pick.label
   let obURI;
   switch (command) {
-    // commandSendto - Append new header to note ${defaultNote} 
+    //  commandSendto - Append new header to note ${defaultNote}
     case `Append new header to default note: '${defaultNote}'`:
       options = {
         placeHolder: `Select new header size to create in note '${defaultNote}'`,
         title: `---=== Vault: ${defaultVault}  -  Default Note: ${defaultNote} ===---`
       };
     let headerSizePick = await vscode.window.showQuickPick(['H1', 'H2', 'H3', 'H4', 'H5', 'H6'], options);
-    // commandSendto - User Canceled 
+    //  commandSendto - User Canceled
     if (!headerSizePick) {
       break;
     }
@@ -1869,7 +1837,7 @@ async function commandSendto() {
       title: `---=== Vault: ${defaultVault}  -  Default Note: ${defaultNote} ===---`
     };
     let headerPick = await vscode.window.showQuickPick(headers, options);
-    // commandSendto - User Canceled 
+    //  commandSendto - User Canceled
     if (!headerPick) {
       break;
     }
@@ -1878,13 +1846,13 @@ async function commandSendto() {
       title: `---=== Vault: ${defaultVault}  -  Default Note: ${defaultNote} ===---`
     };
     let defaultCommandPick = await vscode.window.showQuickPick(defaultPrependAppendCommands, options);
-    // commandSendto - User Canceled 
+    //  commandSendto - User Canceled
     if (!defaultCommandPick) {
       break;
     }
     let command = defaultCommandPick
     switch (command) {
-      // commandSendto - Insert text to note ${defaultNote} header 
+      //  commandSendto - Insert text to note ${defaultNote} header
       case 'Insert text':
         options = {
           placeHolder: `Enter text to insert in default note: '${defaultNote}', under header: '${headerPick.label}'`,
@@ -1896,42 +1864,42 @@ async function commandSendto() {
           if (newText != "") {
             vscode.env.clipboard.writeText(newText);
             if (pick.label == 'Prepend to header...') {
-              obURI = `obsidian://advanced-uri?vault=${defaultVault}&filepath=${defaultNote}&heading=${headerPick.label}&clipboard=true&mode=prepend`
-              vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+              obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(defaultNote)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(newText)}&mode=prepend`
+              vscode.env.openExternal(vscode.Uri.parse(obURI, true));
             } else {
-              obURI = `obsidian://advanced-uri?vault=${defaultVault}&filepath=${defaultNote}&heading=${headerPick.label}&clipboard=true&mode=append`
-              vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+              obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(defaultNote)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(newText)}&mode=append`
+              vscode.env.openExternal(vscode.Uri.parse(obURI, true));
             }
           }
           break;
         }
 
-      // commandSendto - Insert Selected Text to note ${defaultNote} header 
+      //  commandSendto - Insert Selected Text to note ${defaultNote} header
       case 'Insert selected text':
         vscode.env.clipboard.writeText(currentSelection);
           if (pick.label == 'Prepend to header...') {
-            obURI = `obsidian://advanced-uri?vault=${defaultVault}&filepath=${defaultNote}&heading=${headerPick.label}&clipboard=true&mode=prepend`
-            vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+            obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(defaultNote)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(currentSelection)}&mode=prepend`
+            vscode.env.openExternal(vscode.Uri.parse(obURI, true));
           } else {
-            obURI = `obsidian://advanced-uri?vault=${defaultVault}&filepath=${defaultNote}&heading=${headerPick.label}&clipboard=true&mode=append`
-            vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+            obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(defaultNote)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(currentSelection)}&mode=append`
+            vscode.env.openExternal(vscode.Uri.parse(obURI, true));
           }
         break;
 
-      // commandSendto - Insert Selected Text Inline Code Block to note ${defaultNote} header 
+      //  commandSendto - Insert Selected Text Inline Code Block to note ${defaultNote} header
       case 'Insert selected text as inline code block':
         let inlineCodeBlock = '`'+currentSelection+'`'
         vscode.env.clipboard.writeText(inlineCodeBlock);
           if (pick.label == 'Prepend to header...') {
-            obURI = `obsidian://advanced-uri?vault=${defaultVault}&filepath=${defaultNote}&heading=${headerPick.label}&clipboard=true&mode=prepend`
-            vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+            obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(defaultNote)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(inlineCodeBlock)}&mode=prepend`
+            vscode.env.openExternal(vscode.Uri.parse(obURI, true));
           } else {
-            obURI = `obsidian://advanced-uri?vault=${defaultVault}&filepath=${defaultNote}&heading=${headerPick.label}&clipboard=true&mode=append`
-            vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+            obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(defaultNote)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(inlineCodeBlock)}&mode=append`
+            vscode.env.openExternal(vscode.Uri.parse(obURI, true));
           }
         break;
 
-      // commandSendto - Insert Selected Text Fenced Code Block to note ${defaultNote} header 
+      //  commandSendto - Insert Selected Text Fenced Code Block to note ${defaultNote} header
       case 'Insert selected text as fenced code block':
         options = {
           placeHolder: `Enter optional fenced code block language`,
@@ -1943,16 +1911,16 @@ async function commandSendto() {
           let fencedCodeBlock = '\n```'+codeLanguage+'\n'+currentSelection+'\n```'
           vscode.env.clipboard.writeText(fencedCodeBlock);
             if (pick.label == 'Prepend to header...') {
-              obURI = `obsidian://advanced-uri?vault=${defaultVault}&filepath=${defaultNote}&heading=${headerPick.label}&clipboard=true&mode=prepend`
-              vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+              obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(defaultNote)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(fencedCodeBlock)}&mode=prepend`
+              vscode.env.openExternal(vscode.Uri.parse(obURI, true));
             } else {
-              obURI = `obsidian://advanced-uri?vault=${defaultVault}&filepath=${defaultNote}&heading=${headerPick.label}&clipboard=true&mode=append`
-              vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+              obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(defaultNote)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(fencedCodeBlock)}&mode=append`
+              vscode.env.openExternal(vscode.Uri.parse(obURI, true));
             }
         }
         break;
 
-      // commandSendto - Insert Comment to note ${defaultNote} header 
+      //  commandSendto - Insert Comment to note ${defaultNote} header
       case 'Insert Comment':
         options = {
           placeHolder: `Enter comment text to insert in default note: '${defaultNote}', under header: '${headerPick.label}'`,
@@ -1965,17 +1933,17 @@ async function commandSendto() {
             newComment = '%% '+newComment+' %%'
             vscode.env.clipboard.writeText(newComment);
             if (pick.label == 'Prepend to header...') {
-              obURI = `obsidian://advanced-uri?vault=${defaultVault}&filepath=${defaultNote}&heading=${headerPick.label}&clipboard=true&mode=prepend`
-              vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+              obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(defaultNote)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(newComment)}&mode=prepend`
+              vscode.env.openExternal(vscode.Uri.parse(obURI, true));
             } else {
-              obURI = `obsidian://advanced-uri?vault=${defaultVault}&filepath=${defaultNote}&heading=${headerPick.label}&clipboard=true&mode=append`
-              vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+              obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(defaultNote)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(newComment)}&mode=append`
+              vscode.env.openExternal(vscode.Uri.parse(obURI, true));
             }
           }
         }
         break;
 
-      // commandSendto - Insert Unnumbered list item to note ${defaultNote} header 
+      //  commandSendto - Insert Unnumbered list item to note ${defaultNote} header
       case 'Insert Unnumbered list item':
         options = {
           placeHolder: `Enter list item text to insert in default note: '${defaultNote}', under header: '${headerPick.label}'`,
@@ -1988,17 +1956,17 @@ async function commandSendto() {
             newUnnumList = '- '+newUnnumList
             vscode.env.clipboard.writeText(newUnnumList);
             if (pick.label == 'Prepend to header...') {
-              obURI = `obsidian://advanced-uri?vault=${defaultVault}&filepath=${defaultNote}&heading=${headerPick.label}&clipboard=true&mode=prepend`
-              vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+              obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(defaultNote)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(newUnnumList)}&mode=prepend`
+              vscode.env.openExternal(vscode.Uri.parse(obURI, true));
             } else {
-              obURI = `obsidian://advanced-uri?vault=${defaultVault}&filepath=${defaultNote}&heading=${headerPick.label}&clipboard=true&mode=append`
-              vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+              obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(defaultNote)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(newUnnumList)}&mode=append`
+              vscode.env.openExternal(vscode.Uri.parse(obURI, true));
             }
           }
         }
         break;
       
-      // commandSendto - Insert Numbered list item to note ${defaultNote} header 
+      //  commandSendto - Insert Numbered list item to note ${defaultNote} header
       case 'Insert Numbered list item':
         options = {
           placeHolder: `Enter list item text to insert in default note: '${defaultNote}', under header: '${headerPick.label}'`,
@@ -2011,17 +1979,17 @@ async function commandSendto() {
             newNumList = '1. '+newNumList
             vscode.env.clipboard.writeText(newNumList);
             if (pick.label == 'Prepend to header...') {
-              obURI = `obsidian://advanced-uri?vault=${defaultVault}&filepath=${defaultNote}&heading=${headerPick.label}&clipboard=true&mode=prepend`
-              vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+              obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(defaultNote)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(newNumList)}&mode=prepend`
+              vscode.env.openExternal(vscode.Uri.parse(obURI, true));
             } else {
-              obURI = `obsidian://advanced-uri?vault=${defaultVault}&filepath=${defaultNote}&heading=${headerPick.label}&clipboard=true&mode=append`
-              vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+              obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(defaultNote)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(newNumList)}&mode=append`
+              vscode.env.openExternal(vscode.Uri.parse(obURI, true));
             }
           }
         }
         break;
               
-      // commandSendto - Insert Blockquote to note ${defaultNote} header 
+      //  commandSendto - Insert Blockquote to note ${defaultNote} header
       case 'Insert Blockquote':
         options = {
           placeHolder: `Enter blockquote item text to insert in default note: '${defaultNote}', under header: '${headerPick.label}'`,
@@ -2034,24 +2002,24 @@ async function commandSendto() {
             newBlockQuote = '\n> '+newBlockQuote
             vscode.env.clipboard.writeText(newBlockQuote);
             if (pick.label == 'Prepend to header...') {
-              obURI = `obsidian://advanced-uri?vault=${defaultVault}&filepath=${defaultNote}&heading=${headerPick.label}&clipboard=true&mode=prepend`
-              vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+              obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(defaultNote)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(newBlockQuote)}&mode=prepend`
+              vscode.env.openExternal(vscode.Uri.parse(obURI, true));
             } else {
-              obURI = `obsidian://advanced-uri?vault=${defaultVault}&filepath=${defaultNote}&heading=${headerPick.label}&clipboard=true&mode=append`
-              vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+              obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(defaultNote)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(newBlockQuote)}&mode=append`
+              vscode.env.openExternal(vscode.Uri.parse(obURI, true));
             }
           }
         }
         break;
       
-      // commandSendto - Insert task to note ${defaultNote} header 
+      //  commandSendto - Insert task to note ${defaultNote} header
       case 'Insert task':
         options = {
           placeHolder: `Select task type to insert`,
           title: `---=== Vault: ${defaultVault}  -  Default Note: ${defaultNote} ===---`
         };
         let taskPick = await vscode.window.showQuickPick(taskChoices, options);
-        // commandSendto - User Canceled 
+        //  commandSendto - User Canceled
         if (!taskPick) {
           break;
         }
@@ -2067,24 +2035,24 @@ async function commandSendto() {
             let taskDef = `- ${taskPick} ${taskText}`
             vscode.env.clipboard.writeText(taskDef);
             if (pick.label == 'Prepend to header...') {
-              obURI = `obsidian://advanced-uri?vault=${defaultVault}&filepath=${defaultNote}&heading=${headerPick.label}&clipboard=true&mode=prepend`
-              vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+              obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(defaultNote)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(taskDef)}&mode=prepend`
+              vscode.env.openExternal(vscode.Uri.parse(obURI, true));
             } else {
-              obURI = `obsidian://advanced-uri?vault=${defaultVault}&filepath=${defaultNote}&heading=${headerPick.label}&clipboard=true&mode=append`
-              vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+              obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(defaultNote)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(taskDef)}&mode=append`
+              vscode.env.openExternal(vscode.Uri.parse(obURI, true));
             }
           }
         }
         break;
 
-      // commandSendto - Insert Callout to note ${defaultNote} header 
+      //  commandSendto - Insert Callout to note ${defaultNote} header
       case 'Insert Callout':
         options = {
           placeHolder: `Select callout type to insert`,
           title: `---=== Vault: ${defaultVault}  -  Default Note: ${defaultNote} ===---`
         };
         let calloutPick = await vscode.window.showQuickPick(calloutChoices, options);
-        // commandSendto - User Canceled 
+        //  commandSendto - User Canceled
         if (!calloutPick) {
           break;
         }
@@ -2093,7 +2061,7 @@ async function commandSendto() {
           title: `---=== Vault: ${defaultVault}  -  Default Note: ${defaultNote} ===---`
         };
         let foldingPick = await vscode.window.showQuickPick(['None', 'Default Expanded', 'Default Collapsed'], options);
-        // commandSendto - User Canceled 
+        //  commandSendto - User Canceled
         if (!foldingPick) {
           break;
         }
@@ -2126,17 +2094,17 @@ async function commandSendto() {
             calloutDef = calloutDef+'\n'; // Ensures a blank line below callout
             vscode.env.clipboard.writeText(calloutDef);
             if (pick.label == 'Prepend to header...') {
-              obURI = `obsidian://advanced-uri?vault=${defaultVault}&filepath=${defaultNote}&heading=${headerPick.label}&clipboard=true&mode=prepend`
-              vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+              obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(defaultNote)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(calloutDef)}&mode=prepend`
+              vscode.env.openExternal(vscode.Uri.parse(obURI, true));
             } else {
-              obURI = `obsidian://advanced-uri?vault=${defaultVault}&filepath=${defaultNote}&heading=${headerPick.label}&clipboard=true&mode=append`
-              vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+              obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(defaultNote)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(calloutDef)}&mode=append`
+              vscode.env.openExternal(vscode.Uri.parse(obURI, true));
             }
           }
         }
         break;
         
-      // commandSendto - Insert VSCode backlink to note ${defaultNote} header 
+      //  commandSendto - Insert VSCode backlink to note ${defaultNote} header
       case 'Insert VSCode backlink':
         if (lineNumber != "") {
           options = {
@@ -2145,7 +2113,7 @@ async function commandSendto() {
           };
           let backlinkTypePick = "";
           backlinkTypePick = await vscode.window.showQuickPick(BacklinkPrefix, options);
-          // commandSendto - User Canceled 
+          //  commandSendto - User Canceled
           if (!backlinkTypePick) {
             backlinkTypePick = "";
           }
@@ -2161,11 +2129,11 @@ async function commandSendto() {
               let linkDef = `\n[${backlinkTypePick} ${linkText} ${backlinkSeparator} File: ${currentDocumentName} ${backlinkSeparator} ID: ${unixTimestamp}](${vscodeUri})`
               vscode.env.clipboard.writeText(linkDef);
               if (pick.label == 'Prepend to header...') {
-                obURI = `obsidian://advanced-uri?vault=${defaultVault}&filepath=${defaultNote}&heading=${headerPick.label}&clipboard=true&mode=prepend`
-                vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+                obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(defaultNote)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(linkDef)}&mode=prepend`
+                vscode.env.openExternal(vscode.Uri.parse(obURI, true));
               } else {
-                obURI = `obsidian://advanced-uri?vault=${defaultVault}&filepath=${defaultNote}&heading=${headerPick.label}&clipboard=true&mode=append`
-                vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+                obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(defaultNote)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(linkDef)}&mode=append`
+                vscode.env.openExternal(vscode.Uri.parse(obURI, true));
               }
               const editor = vscode.window.activeTextEditor;
               await editor.edit(editBuilder => {
@@ -2178,7 +2146,7 @@ async function commandSendto() {
         }
         break;
         
-      // commandSendto - Insert VSCode backlink button to note ${defaultNote} header 
+      //  commandSendto - Insert VSCode backlink button to note ${defaultNote} header
       case 'Insert VSCode backlink button':
         if (lineNumber != "") {
           options = {
@@ -2187,7 +2155,7 @@ async function commandSendto() {
           };
           let backlinkTypePick = "";
           backlinkTypePick = await vscode.window.showQuickPick(BacklinkPrefix, options);
-          // commandSendto - User Canceled 
+          //  commandSendto - User Canceled
           if (!backlinkTypePick) {
             backlinkTypePick = "";
           }
@@ -2208,11 +2176,11 @@ async function commandSendto() {
               }
               vscode.env.clipboard.writeText(buttonDef);
               if (pick.label == 'Prepend to header...') {
-                obURI = `obsidian://advanced-uri?vault=${defaultVault}&filepath=${defaultNote}&heading=${headerPick.label}&clipboard=true&mode=prepend`
-                vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+                obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(defaultNote)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(buttonDef)}&mode=prepend`
+                vscode.env.openExternal(vscode.Uri.parse(obURI, true));
               } else {
-                obURI = `obsidian://advanced-uri?vault=${defaultVault}&filepath=${defaultNote}&heading=${headerPick.label}&clipboard=true&mode=append`
-                vscode.env.openExternal(vscode.Uri.parse(obURI.replaceAll('#','%23'), true));
+                obURI = `obsidian://new?vault=${encodeURIComponent(defaultVault)}&file=${encodeURIComponent(defaultNote)}&heading=${encodeURIComponent(headerPick.label)}&content=${encodeURIComponent(buttonDef)}&mode=append`
+                vscode.env.openExternal(vscode.Uri.parse(obURI, true));
               }
               const editor = vscode.window.activeTextEditor;
               await editor.edit(editBuilder => {
