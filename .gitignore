@@ -1,4 +1,2 @@
-node_modules
-.pnotes
-.vscode/time_log.json
+node_modules/
 .vscode/settings.json
